@@ -25,6 +25,20 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "users_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Booking> bookings = new HashSet<>();
 
@@ -32,10 +46,11 @@ public class User {
         // Required by JPA
     }
 
-    public User(Long id, String name, String email) {
+    public User(Long id, String name, String email, String password) {
         this.id = id;
         this.name = name;
         this.email = email;
+        this.password = password;
     }
 
     public Long getId() {
@@ -48,6 +63,26 @@ public class User {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public Set<Role> getRoles() {
+        return Collections.unmodifiableSet(roles);
+    }
+
+    public void addRole(Role role) {
+        this.roles.add(role);
+    }
+
+    public void removeRole(Role role) {
+        this.roles.remove(role);
     }
 
     public Set<Booking> getBookings() {
@@ -68,6 +103,7 @@ public class User {
                 "id=" + id +
                 ", name='" + name + "'" +
                 ", email='" + email + "'" +
+                ", active=" + active +
                 '}';
     }
 
@@ -90,5 +126,13 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }
