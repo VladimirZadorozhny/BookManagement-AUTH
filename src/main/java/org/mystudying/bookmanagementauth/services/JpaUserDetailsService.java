@@ -1,9 +1,8 @@
 package org.mystudying.bookmanagementauth.services;
 
-import org.mystudying.bookmanagementauth.domain.Role;
+import org.mystudying.bookmanagementauth.config.UserPrincipal;
 import org.mystudying.bookmanagementauth.domain.User;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,19 +19,9 @@ public class JpaUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailWithRoles(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .disabled(!user.isActive())
-                .authorities(
-                        user.getRoles().stream()
-                                .map(Role::getName)
-                                .map(SimpleGrantedAuthority::new)
-                                .toList()
-                )
-                .build();
+        return UserPrincipal.from(user);
     }
 }

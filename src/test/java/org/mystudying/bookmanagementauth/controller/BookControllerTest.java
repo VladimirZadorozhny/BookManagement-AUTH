@@ -15,6 +15,7 @@ import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -193,6 +194,7 @@ public class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void createBookReturnsCreatedBook() throws Exception {
         long initialRowCount = JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE);
         String newBookJson = readJsonFile("correctBook.json");
@@ -222,6 +224,7 @@ public class BookControllerTest {
             "BookWithNegativeAvailable.json",
             "BookWithoutAvailable.json"
     })
+    @WithMockUser(roles = "ADMIN")
     void createBookReturnsBadRequestForInvalidData(String fileName) throws Exception {
         String invalidBookJson = readJsonFile(fileName);
         mockMvc.perform(post("/api/books")
@@ -231,6 +234,7 @@ public class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void updateBookReturnsUpdatedBook() throws Exception {
         long id = idOfTestBook1();
         String updatedBookJson = readJsonFile("updatedBook.json");
@@ -255,6 +259,7 @@ public class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void updateBookReturnsNotFoundForUnknownId() throws Exception {
         String updatedBookJson = readJsonFile("updatedBook.json");
         mockMvc.perform(put("/api/books/{id}", Long.MAX_VALUE)
@@ -265,6 +270,7 @@ public class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteBookReturnsNoContent() throws Exception {
         long id = idOfBookForDeletion();
         long initialRowCount = JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE);
@@ -282,6 +288,7 @@ public class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteBookReturnsNotFoundForUnknownId() throws Exception {
         mockMvc.perform(delete("/api/books/{id}", Long.MAX_VALUE))
                 .andExpect(status().isNotFound())

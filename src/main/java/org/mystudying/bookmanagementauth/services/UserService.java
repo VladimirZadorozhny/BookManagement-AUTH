@@ -9,9 +9,11 @@ import org.mystudying.bookmanagementauth.dto.UpdateUserRequestDto;
 import org.mystudying.bookmanagementauth.exceptions.*;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
+import org.mystudying.bookmanagementauth.repositories.RoleRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +29,19 @@ public class UserService {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final BookingRepository bookingRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, BookRepository bookRepository, BookingRepository bookingRepository) {
+    public UserService(UserRepository userRepository,
+                       BookRepository bookRepository,
+                       BookingRepository bookingRepository,
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.bookingRepository = bookingRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public List<User> findAll() {
@@ -120,7 +130,14 @@ public class UserService {
     @Transactional
     public User save(CreateUserRequestDto createUserRequestDto) {
         try {
-            return userRepository.save(new User(null, createUserRequestDto.name(), createUserRequestDto.email()));
+            User user = new User(null,
+                    createUserRequestDto.name(),
+                    createUserRequestDto.email(),
+                    passwordEncoder.encode(createUserRequestDto.password()));
+            
+            roleRepository.findByName("ROLE_USER").ifPresent(user::addRole);
+            
+            return userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(createUserRequestDto.email());
         }
@@ -132,6 +149,15 @@ public class UserService {
         try {
             user.setName(updateUserRequestDto.name());
             user.setEmail(updateUserRequestDto.email());
+            
+            if (updateUserRequestDto.password() != null && !updateUserRequestDto.password().isBlank()) {
+                user.setPassword(passwordEncoder.encode(updateUserRequestDto.password()));
+            }
+            
+            if (updateUserRequestDto.active() != null) {
+                user.setActive(updateUserRequestDto.active());
+            }
+            
             userRepository.saveAndFlush(user);
             return user;
         } catch (DataIntegrityViolationException e) {

@@ -1,4 +1,5 @@
 {
-    "name": "User With Invalid Email",
-    "email": "invalid-email"
+    "name": "Invalid User",
+    "email": "invalid-email",
+    "password": "password"
 }

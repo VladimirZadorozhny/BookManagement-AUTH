@@ -6,11 +6,17 @@ INSERT INTO authors(name, birthdate) VALUES ('Author For Deletion', '1950-01-01'
 -- Test Genres
 INSERT INTO genres(name) VALUES ('Test Genre 1'), ('Test Genre 2'), ('Test Genre 3');
 
+-- Test Roles
+INSERT IGNORE INTO roles(name) VALUES ('ROLE_USER'), ('ROLE_ADMIN');
+
 -- Test Users
-INSERT INTO users(name, email) VALUES ('Test User 1', 'test1@example.com');
-INSERT INTO users(name, email) VALUES ('Test User 2', 'test2@example.com');
-INSERT INTO users(name, email) VALUES ('User For Deletion', 'delete@example.com');
-INSERT INTO users(name, email) VALUES ('Rent User', 'rent@example.com');
+INSERT INTO users(name, email, password, active) VALUES ('Test User 1', 'test1@example.com', '{noop}password', true);
+INSERT INTO users(name, email, password, active) VALUES ('Test User 2', 'test2@example.com', '{noop}password', true);
+INSERT INTO users(name, email, password, active) VALUES ('User For Deletion', 'delete@example.com', '{noop}password', true);
+INSERT INTO users(name, email, password, active) VALUES ('Rent User', 'rent@example.com', '{noop}password', true);
+
+-- Assign ROLE_USER to all test users
+INSERT INTO users_roles(user_id, role_id) SELECT id, (SELECT id FROM roles WHERE name = 'ROLE_USER') FROM users WHERE email IN ('test1@example.com', 'test2@example.com', 'delete@example.com', 'rent@example.com');
 
 -- Test Books
 INSERT INTO books(title, year, author_id, available) VALUES ('Test Book 1', 2001, (SELECT id FROM authors WHERE name='Test Author 1'), 5);

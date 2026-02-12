@@ -16,6 +16,8 @@ import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -55,6 +57,7 @@ public class UserRentLogicTest {
     }
 
     @Test
+    @WithUserDetails(value = "clean@logic.test", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookSuccessForCleanUser() throws Exception {
         long userId = idOfUser("clean@logic.test");
         long bookId = idOfBook("Logic Book A");
@@ -101,6 +104,7 @@ public class UserRentLogicTest {
     }
 
     @Test
+    @WithUserDetails(value = "overdue@logic.test", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookFailsWhenUserHasOverdueBooks() throws Exception {
         long userId = idOfUser("overdue@logic.test");
         long bookId = idOfBook("Logic Book A");
@@ -115,6 +119,7 @@ public class UserRentLogicTest {
     }
 
     @Test
+    @WithUserDetails(value = "fine@logic.test", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookFailsWhenUserHasUnpaidFines() throws Exception {
         long userId = idOfUser("fine@logic.test");
         long bookId = idOfBook("Logic Book A");
@@ -129,6 +134,7 @@ public class UserRentLogicTest {
     }
 
     @Test
+    @WithUserDetails(value = "overdue@logic.test", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void returnBookCalculatesFineWhenOverdue() throws Exception {
 
         long userId = idOfUser("overdue@logic.test");
@@ -152,6 +158,7 @@ public class UserRentLogicTest {
     }
 
     @Test
+    @WithUserDetails(value = "overdue@logic.test", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookSuccessOnlyAfterReturnOverdueAndPayFines() throws Exception {
         long userId = idOfUser("overdue@logic.test");
         long bookIdOverdue = idOfBook("Overdue Book");

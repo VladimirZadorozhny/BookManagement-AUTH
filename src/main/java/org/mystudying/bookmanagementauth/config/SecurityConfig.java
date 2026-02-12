@@ -3,6 +3,7 @@ package org.mystudying.bookmanagementauth.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,44 +14,44 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorize -> authorize
-                // Public endpoints
-                .requestMatchers(HttpMethod.GET,"/api/authors/**").permitAll() // Authors GETs
-                    .requestMatchers(HttpMethod.GET,"/api/books/**").permitAll()    // Books GETs
-                    .requestMatchers(HttpMethod.GET,"/api/genres/**").permitAll() // Genres GETs
+            .authorizeHttpRequests(auth -> auth
+                // 1. PUBLIC READ (Catalog)
+                .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/authors/**", "/api/genres/**").permitAll()
 
-//                    static resources
-                    .requestMatchers("/login", "/register", "/css/**", "/js/**", "/", "/index.html", "/books.html",
-                                "/authors.html", "/genres.html", "/reports.html", "/user.html", "/users.html", "/author.html",
-                                 "/book.html").permitAll() // Frontend resources & login/register pages
+                // 2. PUBLIC WEB & STATIC RESOURCES
+                .requestMatchers("/", "/index.html", "/login", "/register", "/css/**", "/js/**",
+                                "/books.html", "/authors.html", "/genres.html", "/reports.html",
+                                "/user.html", "/users.html", "/author.html", "/book.html").permitAll()
 
+                // 3. PUBLIC AUTH (Login/Register APIs)
+                .requestMatchers("/api/auth/**").permitAll()
 
-                // Admin-only endpoints
-                .requestMatchers(
-                    "/api/authors/**", // POST, PUT, DELETE for authors
-                    "/api/books/**",     // POST, PUT, DELETE for books
-                    "/api/genres/**",   // POST, PUT, DELETE for genres (need to be added later)
-                    "/api/reports/bookings",             // Admin reports
-                    "/api/users/**"      // POST, PUT, DELETE for users (admin management)
-                ).hasRole("ADMIN")
+                // 4. ADMIN-ONLY MUTATIONS (Catalog Management)
+                .requestMatchers(HttpMethod.POST, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")
 
-                // Authenticated users (ROLE_USER or ROLE_ADMIN) can access
-                .requestMatchers(
-                    "/api/users/{id}/rent", "/api/users/{id}/return", "/api/users/{userId}/bookings/{bookingId}/pay",
-                    "/api/users/{id}/bookings", "/api/users/{id}/books", "/api/users/search"
-                ).authenticated() // More specific authorization for these will come with @PreAuthorize
+                // 5. ADMIN-ONLY REPORTS & USER MANAGEMENT
+                .requestMatchers("/api/reports/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
+                .requestMatchers("/api/users/search").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
 
-                // Catch-all for any other authenticated paths
+                // 6. EVERYTHING ELSE (Authenticated)
+                // Ownership checks (e.g. /api/users/{id}/**) are enforced via @PreAuthorize in UserController
                 .anyRequest().authenticated()
             )
-            .formLogin(withDefaults()) // Use default form login
-            .httpBasic(withDefaults()); // Enable HTTP Basic for API clients
+            .formLogin(withDefaults())
+            .httpBasic(withDefaults());
+
         return http.build();
     }
 

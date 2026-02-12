@@ -11,6 +11,7 @@ import org.mystudying.bookmanagementauth.exceptions.AuthorNotFoundException;
 import org.mystudying.bookmanagementauth.services.AuthorService;
 import org.mystudying.bookmanagementauth.services.BookService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -58,12 +59,14 @@ public class AuthorController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     public AuthorDto createAuthor(@Valid @RequestBody CreateAuthorRequestDto authorDto) {
         var author = authorService.save(authorDto);
         return toDto(author);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public AuthorDto updateAuthor(@PathVariable long id, @Valid @RequestBody UpdateAuthorRequestDto authorDto) {
         Author authorToUpdate = authorService.update(id, authorDto);
         return toDto(authorToUpdate);
@@ -71,6 +74,7 @@ public class AuthorController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteAuthor(@PathVariable long id) {
 
         authorService.deleteById(id);

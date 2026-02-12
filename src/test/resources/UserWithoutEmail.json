@@ -1,3 +1,4 @@
 {
-    "name": "User Without Email"
+    "name": "Invalid User",
+    "password": "password"
 }

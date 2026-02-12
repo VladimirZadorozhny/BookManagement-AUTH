@@ -5,9 +5,15 @@ INSERT INTO authors (name, birthdate) VALUES ('Logic Author', '1980-01-01');
 INSERT INTO genres (name) VALUES ('Logic Genre');
 
 -- 3. Users
-INSERT INTO users (name, email) VALUES ('Clean User', 'clean@logic.test');
-INSERT INTO users (name, email) VALUES ('Overdue User', 'overdue@logic.test');
-INSERT INTO users (name, email) VALUES ('Fine User', 'fine@logic.test');
+INSERT INTO users (name, email, password, active) VALUES ('Clean User', 'clean@logic.test', '{noop}password', true);
+INSERT INTO users (name, email, password, active) VALUES ('Overdue User', 'overdue@logic.test', '{noop}password', true);
+INSERT INTO users (name, email, password, active) VALUES ('Fine User', 'fine@logic.test', '{noop}password', true);
+
+-- 3.1 Roles (if not already present from base script)
+INSERT IGNORE INTO roles(name) VALUES ('ROLE_USER'), ('ROLE_ADMIN');
+
+-- 3.2 Mapping
+INSERT INTO users_roles(user_id, role_id) SELECT id, (SELECT id FROM roles WHERE name = 'ROLE_USER') FROM users WHERE email IN ('clean@logic.test', 'overdue@logic.test', 'fine@logic.test');
 
 -- 4. Books
 -- Available Book A

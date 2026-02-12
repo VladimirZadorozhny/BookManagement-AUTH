@@ -1,4 +1,6 @@
 {
     "name": "Updated User Name",
-    "email": "updated.user@example.com"
+    "email": "updated.user@example.com",
+    "password": "newpassword",
+    "active": true
 }

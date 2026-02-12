@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mystudying.bookmanagementauth.config.UserPrincipal;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
@@ -18,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,9 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,6 +101,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void getAllUsersReturnsAllUsers() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
@@ -111,6 +117,17 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "test1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    void debugSecurityContext() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
+        System.out.println("DEBUG PRINCIPAL ID: " + principal.getId());
+        System.out.println("DEBUG DATABASE ID: " + idOfTestUser1());
+        System.out.println("DEBUG AUTHORITIES: " + auth.getAuthorities());
+    }
+
+    @Test
+    @WithUserDetails(value = "test1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getUserByIdReturnsCorrectUser() throws Exception {
         long id = idOfTestUser1();
         mockMvc.perform(get("/api/users/{id}", id))
@@ -120,6 +137,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void getUserByIdReturnsNotFoundForUnknownId() throws Exception {
         mockMvc.perform(get("/api/users/{id}", Long.MAX_VALUE))
                 .andExpect(status().isNotFound())
@@ -127,6 +145,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void searchUserByNameReturnsCorrectUser() throws Exception {
         mockMvc.perform(get("/api/users/search").queryParam("by", "Test User 1"))
                 .andExpect(status().isOk())
@@ -135,6 +154,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void searchUserByEmailReturnsCorrectUser() throws Exception {
         mockMvc.perform(get("/api/users/search").queryParam("by", "test2@example.com"))
                 .andExpect(status().isOk())
@@ -143,6 +163,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void searchUserReturnsNotFoundForUnknownUser() throws Exception {
         mockMvc.perform(get("/api/users/search").queryParam("by", "unknown@example.com"))
                 .andExpect(status().isNotFound())
@@ -150,6 +171,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "test1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void getBooksByUserReturnsCorrectBooks() throws Exception {
         long user1Id = idOfTestUser1(); // Test User 1 has Test Book 1
 
@@ -174,6 +196,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void getBooksByUserReturnsNotFoundForUnknownUser() throws Exception {
         mockMvc.perform(get("/api/users/{id}/books", Long.MAX_VALUE))
                 .andExpect(status().isNotFound())
@@ -181,6 +204,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void createUserReturnsCreatedUser() throws Exception {
         long initialRowCount = JdbcTestUtils.countRowsInTable(jdbcClient, USERS_TABLE);
         String newUserJson = readJsonFile("correctUser.json");
@@ -210,6 +234,7 @@ public class UserControllerTest {
             "UserWithoutEmail.json",
             "UserWithInvalidEmail.json"
     })
+    @WithMockUser(roles = "ADMIN")
     void createUserReturnsBadRequestForInvalidData(String fileName) throws Exception {
         String invalidUserJson = readJsonFile(fileName);
         mockMvc.perform(post("/api/users")
@@ -219,11 +244,13 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void createUserReturnsConflictForDuplicateEmail() throws Exception {
         String duplicateUserJson = """
             {
                 "name": "Existing User",
-                "email": "test1@example.com"
+                "email": "test1@example.com",
+                "password": "password"
             }
             """;
         mockMvc.perform(post("/api/users")
@@ -234,6 +261,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "test1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void updateUserReturnsUpdatedUser() throws Exception {
         long id = idOfTestUser1();
         String updatedUserJson = readJsonFile("updatedUser.json");
@@ -251,6 +279,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void updateUserReturnsNotFoundForUnknownId() throws Exception {
         String updatedUserJson = readJsonFile("updatedUser.json");
         mockMvc.perform(put("/api/users/{id}", Long.MAX_VALUE)
@@ -261,13 +290,16 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void updateUserReturnsConflictForDuplicateEmail() throws Exception {
         long id = idOfTestUser1();
         // Try to update user#1's email to user#2's email
         String duplicateEmailJson = """
             {
                 "name": "Test User 1",
-                "email": "test2@example.com"
+                "email": "test2@example.com",
+                "password": "password",
+                "active": true
             }
             """;
         mockMvc.perform(put("/api/users/{id}", id)
@@ -288,6 +320,7 @@ public class UserControllerTest {
 
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteUserReturnsNoContent() throws Exception {
         long id = idOfUserForDeletion();
         long initialRowCount = JdbcTestUtils.countRowsInTable(jdbcClient, USERS_TABLE);
@@ -309,6 +342,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteUserReturnsNotFoundForUnknownId() throws Exception {
         mockMvc.perform(delete("/api/users/{id}", Long.MAX_VALUE))
                 .andExpect(status().isNotFound())
@@ -316,6 +350,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "rent@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookReturnsNoContent() throws Exception {
         long rentUserId = idOfRentUser();
         long rentableBookId = idOfRentableBook();
@@ -350,6 +385,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void rentBookReturnsNotFoundForUnknownUser() throws Exception {
         long rentableBookId = idOfRentableBook();
         String rentRequestJson = readJsonFile("rentOrReturnBookRequest.json").replace("1", String.valueOf(rentableBookId));
@@ -362,6 +398,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "rent@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookReturnsNotFoundForUnknownBook() throws Exception {
         long rentUserId = idOfRentUser();
         String rentRequestJson = readJsonFile("rentOrReturnBookRequest.json").replace("1", String.valueOf(Long.MAX_VALUE));
@@ -374,6 +411,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "test1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookReturnsConflictForAlreadyBorrowedBook() throws Exception {
         long user1Id = idOfTestUser1();
         long testBook1Id = idOfTestBook1(); // Test Book 1 is already borrowed by Test User 1
@@ -387,6 +425,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "rent@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void rentBookReturnsConflictForUnavailableBook() throws Exception {
         long rentUserId = idOfRentUser();
         long unavailableBookId = jdbcClient.sql("SELECT id FROM books WHERE title = 'Test Book 2'").query(Long.class).single();
@@ -401,6 +440,7 @@ public class UserControllerTest {
 
 
     @Test
+    @WithUserDetails(value = "rent@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void returnBookReturnsNoContent() throws Exception {
         // First, make sure that a book is rented by Rent User
         long rentUserId = idOfRentUser();
@@ -462,6 +502,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void returnBookReturnsNotFoundForUnknownUser() throws Exception {
         long rentableBookId = idOfRentableBook();
         String returnRequestJson = readJsonFile("rentOrReturnBookRequest.json").replace("1", String.valueOf(rentableBookId));
@@ -474,6 +515,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "rent@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void returnBookReturnsNotFoundForUnknownBook() throws Exception {
         long rentUserId = idOfRentUser();
         String returnRequestJson = readJsonFile("rentOrReturnBookRequest.json").replace("1", String.valueOf(Long.MAX_VALUE));
@@ -486,6 +528,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithUserDetails(value = "rent@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void returnBookReturnsConflictForNotBorrowedBook() throws Exception {
         long rentUserId = idOfRentUser();
         long testBook2Id = jdbcClient.sql("SELECT id FROM books WHERE title = 'Test Book 2'").query(Long.class).single(); // Test Book 2 is not borrowed by Rent User
@@ -507,7 +550,7 @@ public class UserControllerTest {
     // This cleanup is targeted to undo the specific changes made by the concurrency test,
     // and also to clean up any test records inserted by @Sql.
     private void dbCleanup(long user1Id, long user2Id, long bookId) {
-        // Order: bookings -> book_genres -> books -> authors -> users -> genres
+        // Order: bookings -> book_genres -> users_roles -> books -> authors -> users -> genres
 
         // 1. Delete all bookings involving these users or this book
         jdbcClient.sql("DELETE FROM " + BOOKINGS_TABLE + " WHERE user_id = ? OR user_id = ? OR book_id = ?")
@@ -520,6 +563,9 @@ public class UserControllerTest {
         // Clear book_genres
         jdbcClient.sql("DELETE FROM book_genres WHERE book_id IN (SELECT id FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2'))").update();
 
+        // Clear users_roles
+        jdbcClient.sql("DELETE FROM users_roles WHERE user_id IN (SELECT id FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com'))").update();
+
         // Clear books
         jdbcClient.sql("DELETE FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2')").update();
 
@@ -531,6 +577,7 @@ public class UserControllerTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED) // Important for concurrency tests due @Transactional also in Service class that is used here in test
+    @WithMockUser(roles = "ADMIN")
     void rentBook_concurrentAccess_oneSucceedsOneFails() throws Exception {
         long user1Id = idOfRentUser();
         long user2Id = idOfTestUser2();
@@ -547,21 +594,21 @@ public class UserControllerTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         // Define two tasks, one for each user that are trying to rent the same book.
-        Callable<Integer> task1 = () -> {
+        Callable<Integer> task1 = new DelegatingSecurityContextCallable<>(() -> {
             String rentRequestJson = readJsonFile("rentOrReturnBookRequest.json").replace("1", String.valueOf(bookId));
             return mockMvc.perform(post("/api/users/{userId}/rent", user1Id)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(rentRequestJson))
                     .andReturn().getResponse().getStatus();
-        };
+        });
 
-        Callable<Integer> task2 = () -> {
+        Callable<Integer> task2 = new DelegatingSecurityContextCallable<>(() -> {
             String rentRequestJson = readJsonFile("rentOrReturnBookRequest.json").replace("1", String.valueOf(bookId));
             return mockMvc.perform(post("/api/users/{userId}/rent", user2Id)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(rentRequestJson))
                     .andReturn().getResponse().getStatus();
-        };
+        });
 
         List<Callable<Integer>> tasks = new ArrayList<>(List.of(task1, task2));
 

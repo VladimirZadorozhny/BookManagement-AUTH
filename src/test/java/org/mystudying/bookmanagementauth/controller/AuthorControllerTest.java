@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.jdbc.JdbcTestUtils;
 import com.jayway.jsonpath.JsonPath;
+import org.springframework.security.test.context.support.WithMockUser;
 
 
 @SpringBootTest
@@ -93,6 +94,7 @@ public class AuthorControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void createAuthorReturnsCreatedAuthor() throws Exception {
         long initialRowCount = JdbcTestUtils.countRowsInTable(jdbcClient, AUTHORS_TABLE);
         long maxId = jdbcClient.sql("select max(id) from authors")
@@ -115,6 +117,7 @@ public class AuthorControllerTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"AuthorWithEmptyName.json", "AuthorWithoutName.json", "AuthorWithoutBirthdate.json", "AuthorWithFutureBirthdate.json"})
+    @WithMockUser(roles = "ADMIN")
     void createAuthorReturnsBadRequestForInvalidData(String fileName) throws Exception {
         String invalidAuthorJson = readJsonFile(fileName);
         mockMvc.perform(post("/api/authors")
@@ -124,6 +127,7 @@ public class AuthorControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void updateAuthorReturnsUpdatedAuthor() throws Exception {
         long id = idOfTestAuthor1();
         String updatedAuthorJson = readJsonFile("updatedAuthor.json");
@@ -146,6 +150,7 @@ public class AuthorControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void updateAuthorReturnsNotFoundForUnknownId() throws Exception {
         String updatedAuthorJson = readJsonFile("updatedAuthor.json");
         mockMvc.perform(put("/api/authors/{id}", Long.MAX_VALUE)
@@ -156,6 +161,7 @@ public class AuthorControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteAuthorReturnsNoContentIfAuthorHasNoBooks() throws Exception {
         long authorIdToDelete = idOfAuthorForDeletion();
 
@@ -192,6 +198,7 @@ public class AuthorControllerTest {
 
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteAuthorReturnsConflictIfAuthorHasBooks() throws Exception {
         // The Book For Deletion is linked to Author For Deletion
         long authorIdToDelete = idOfAuthorForDeletion();
@@ -206,6 +213,7 @@ public class AuthorControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void deleteAuthorReturnsNotFoundForUnknownId() throws Exception {
         mockMvc.perform(delete("/api/authors/{id}", Long.MAX_VALUE))
                 .andExpect(status().isNotFound())

@@ -1,4 +1,5 @@
 {
-    "name": "User With Empty Email",
-    "email": ""
+    "name": "Invalid User",
+    "email": "",
+    "password": "password"
 }
