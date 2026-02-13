@@ -2,10 +2,9 @@ package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.domain.Booking;
+import org.mystudying.bookmanagementauth.domain.Role;
 import org.mystudying.bookmanagementauth.domain.User;
-import org.mystudying.bookmanagementauth.dto.BookingResponseDto;
-import org.mystudying.bookmanagementauth.dto.CreateUserRequestDto;
-import org.mystudying.bookmanagementauth.dto.UpdateUserRequestDto;
+import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.*;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
@@ -44,8 +43,10 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public List<User> findAll() {
-        return userRepository.findAll(Sort.by("name"));
+    public List<UserDto> findAll() {
+        return userRepository.findAll(Sort.by("name")).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -54,20 +55,22 @@ public class UserService {
      * Kept temporarily to avoid breaking existing tests.
      */
     @Deprecated
-    public List<User> findUsersWithMoreThanXBooks(long count) {
-        return userRepository.findUsersWithMoreThanXBooks(count);
+    public List<UserDto> findUsersWithMoreThanXBooks(long count) {
+        return userRepository.findUsersWithMoreThanXBooks(count).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
-    public Optional<User> findById(long id) {
-        return userRepository.findById(id);
+    public Optional<UserDto> findById(long id) {
+        return userRepository.findById(id).map(this::toDto);
     }
 
-    public Optional<User> findByName(String name) {
-        return userRepository.findByName(name);
+    public Optional<UserDto> findByName(String name) {
+        return userRepository.findByName(name).map(this::toDto);
     }
 
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+    public Optional<UserDto> findByEmail(String email) {
+        return userRepository.findByEmail(email).map(this::toDto);
     }
 
     /**
@@ -77,7 +80,7 @@ public class UserService {
      */
     @Deprecated
     public List<Book> findActiveBorrowedBooksByUserId(long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+        userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         return bookingRepository.findActiveBookingsWithBooksByUserId(userId).stream()
                 .map(Booking::getBook)
                 .collect(Collectors.toList());
@@ -128,7 +131,23 @@ public class UserService {
     }
 
     @Transactional
-    public User save(CreateUserRequestDto createUserRequestDto) {
+    public UserDto register(RegisterRequestDto registerRequestDto) {
+        try {
+            User user = new User(null,
+                    registerRequestDto.name(),
+                    registerRequestDto.email(),
+                    passwordEncoder.encode(registerRequestDto.password()));
+
+            roleRepository.findByName("ROLE_USER").ifPresent(user::addRole);
+
+            return toDto(userRepository.save(user));
+        } catch (DataIntegrityViolationException e) {
+            throw new EmailAlreadyExistsException(registerRequestDto.email());
+        }
+    }
+
+    @Transactional
+    public UserDto save(CreateUserRequestDto createUserRequestDto) {
         try {
             User user = new User(null,
                     createUserRequestDto.name(),
@@ -137,14 +156,14 @@ public class UserService {
             
             roleRepository.findByName("ROLE_USER").ifPresent(user::addRole);
             
-            return userRepository.save(user);
+            return toDto(userRepository.save(user));
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(createUserRequestDto.email());
         }
     }
 
     @Transactional
-    public User update(long id, UpdateUserRequestDto updateUserRequestDto) {
+    public UserDto update(long id, UpdateUserRequestDto updateUserRequestDto) {
         User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
         try {
             user.setName(updateUserRequestDto.name());
@@ -158,8 +177,7 @@ public class UserService {
                 user.setActive(updateUserRequestDto.active());
             }
             
-            userRepository.saveAndFlush(user);
-            return user;
+            return toDto(userRepository.saveAndFlush(user));
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(user.getEmail());
         }
@@ -218,6 +236,18 @@ public class UserService {
         booking.setFine(booking.calculateFine());
 
         booking.getBook().returnBook();
+    }
+
+    private UserDto toDto(User user) {
+        return new UserDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.isActive(),
+                user.getRoles().stream()
+                        .map(Role::getName)
+                        .collect(Collectors.toSet())
+        );
     }
 }
 

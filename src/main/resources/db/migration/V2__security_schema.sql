@@ -33,7 +33,7 @@ INSERT INTO roles (name) VALUES ('ROLE_USER'), ('ROLE_ADMIN');
 
 -- Migrating existing users: set password to hashed 'password'
 -- BCrypt hash for 'password'
-UPDATE users SET password = '{bcrypt}$2a$10$8.UnVuG9HHgffUDalk8qfOuVGkqCYAdVqvoLSu5DM6WTPPD8LsW1q';
+UPDATE users SET password = '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra';
 
 -- Assign ROLE_USER to all existing users
 INSERT INTO users_roles (user_id, role_id)
@@ -42,7 +42,7 @@ SELECT id, (SELECT id FROM roles WHERE name = 'ROLE_USER') FROM users;
 -- Create default admin user (admin@library.com / admin)
 -- BCrypt hash for 'admin'
 INSERT INTO users (name, email, password, active)
-VALUES ('System Admin', 'admin@library.com', '{bcrypt}$2a$10$hKDVYxLefVHV/vtuPhWD3u6y9xe.S.A9xpsOInT0m2W14iR7s9B72', TRUE);
+VALUES ('System Admin', 'admin@library.com', '{bcrypt}$2a$10$lCGPSuMSFNgYmuWjuhoiAutr6Lb9NcDa24aB/SO0DI643UBNq/CaC', TRUE);
 
 -- Assign ROLE_ADMIN to the new admin user
 INSERT INTO users_roles (user_id, role_id)

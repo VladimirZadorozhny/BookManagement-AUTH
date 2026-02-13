@@ -10,10 +10,10 @@ INSERT INTO genres(name) VALUES ('Test Genre 1'), ('Test Genre 2'), ('Test Genre
 INSERT IGNORE INTO roles(name) VALUES ('ROLE_USER'), ('ROLE_ADMIN');
 
 -- Test Users
-INSERT INTO users(name, email, password, active) VALUES ('Test User 1', 'test1@example.com', '{noop}password', true);
-INSERT INTO users(name, email, password, active) VALUES ('Test User 2', 'test2@example.com', '{noop}password', true);
-INSERT INTO users(name, email, password, active) VALUES ('User For Deletion', 'delete@example.com', '{noop}password', true);
-INSERT INTO users(name, email, password, active) VALUES ('Rent User', 'rent@example.com', '{noop}password', true);
+INSERT INTO users(name, email, password, active) VALUES ('Test User 1', 'test1@example.com', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
+INSERT INTO users(name, email, password, active) VALUES ('Test User 2', 'test2@example.com', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
+INSERT INTO users(name, email, password, active) VALUES ('User For Deletion', 'delete@example.com', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
+INSERT INTO users(name, email, password, active) VALUES ('Rent User', 'rent@example.com', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
 
 -- Assign ROLE_USER to all test users
 INSERT INTO users_roles(user_id, role_id) SELECT id, (SELECT id FROM roles WHERE name = 'ROLE_USER') FROM users WHERE email IN ('test1@example.com', 'test2@example.com', 'delete@example.com', 'rent@example.com');

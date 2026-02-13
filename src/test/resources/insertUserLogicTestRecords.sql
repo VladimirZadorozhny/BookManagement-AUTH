@@ -5,9 +5,9 @@ INSERT INTO authors (name, birthdate) VALUES ('Logic Author', '1980-01-01');
 INSERT INTO genres (name) VALUES ('Logic Genre');
 
 -- 3. Users
-INSERT INTO users (name, email, password, active) VALUES ('Clean User', 'clean@logic.test', '{noop}password', true);
-INSERT INTO users (name, email, password, active) VALUES ('Overdue User', 'overdue@logic.test', '{noop}password', true);
-INSERT INTO users (name, email, password, active) VALUES ('Fine User', 'fine@logic.test', '{noop}password', true);
+INSERT INTO users (name, email, password, active) VALUES ('Clean User', 'clean@logic.test', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
+INSERT INTO users (name, email, password, active) VALUES ('Overdue User', 'overdue@logic.test', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
+INSERT INTO users (name, email, password, active) VALUES ('Fine User', 'fine@logic.test', '{bcrypt}$2a$10$W8Fh/h9nADK75zl/zXWAeOsq43iLzwrtbeLi/HnZdYwUhzjbOT2Ra', true);
 
 -- 3.1 Roles (if not already present from base script)
 INSERT IGNORE INTO roles(name) VALUES ('ROLE_USER'), ('ROLE_ADMIN');

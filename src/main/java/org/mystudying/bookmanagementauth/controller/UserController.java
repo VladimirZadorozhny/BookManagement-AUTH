@@ -2,8 +2,6 @@ package org.mystudying.bookmanagementauth.controller;
 
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.domain.Book;
-import org.mystudying.bookmanagementauth.domain.Role;
-import org.mystudying.bookmanagementauth.domain.User;
 import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
 import org.mystudying.bookmanagementauth.services.UserService;
@@ -30,28 +28,24 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserDto> getAllUsers() {
-        return userService.findAll().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return userService.findAll();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == principal.id")
     public UserDto getUserById(@PathVariable long id) {
         return userService.findById(id)
-                .map(this::toDto)
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
     public UserDto searchUser(@RequestParam String by) {
-        Optional<User> user = userService.findByName(by);
+        Optional<UserDto> user = userService.findByName(by);
         if (user.isEmpty()) {
             user = userService.findByEmail(by);
         }
-        return user.map(this::toDto)
-                .orElseThrow(() -> new UserNotFoundException(by));
+        return user.orElseThrow(() -> new UserNotFoundException(by));
     }
 
     /**
@@ -72,13 +66,13 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public UserDto createUser(@Valid @RequestBody CreateUserRequestDto userDto) {
-        return toDto(userService.save(userDto));
+        return userService.save(userDto);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == principal.id")
     public UserDto updateUser(@PathVariable long id, @Valid @RequestBody UpdateUserRequestDto userDto) {
-        return toDto(userService.update(id, userDto));
+        return userService.update(id, userDto);
     }
 
     @DeleteMapping("/{id}")
@@ -115,18 +109,6 @@ public class UserController {
         userService.payFine(userId, bookingId);
     }
 
-    private UserDto toDto(User user) {
-        return new UserDto(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.isActive(),
-                user.getRoles().stream()
-                        .map(Role::getName)
-                        .collect(Collectors.toSet())
-        );
-    }
-    
     private BookDto toBookDto(Book book) {
         return new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable());
     }
