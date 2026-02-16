@@ -195,7 +195,7 @@ public class UserService {
     @Transactional
     public void rentBook(long userId, long bookId) {
         User user = userRepository.findUserByIdWithBookings(userId).orElseThrow(() -> new UserNotFoundException(userId));
-        Book book = bookRepository.findAndLockById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
 
         if (bookingRepository.findActiveBooking(userId, bookId).isPresent()) {
             throw new BookAlreadyBorrowedException();

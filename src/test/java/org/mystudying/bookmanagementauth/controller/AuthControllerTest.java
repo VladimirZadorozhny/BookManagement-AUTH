@@ -70,14 +70,16 @@ public class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registration)))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
     }
 
     @Test
     void meReturnsUnauthorizedWhenNotLoggedIn() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("User is not authenticated"));
+                .andExpect(jsonPath("$.message").value("User is not authenticated"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -105,7 +107,8 @@ public class AuthControllerTest {
                         .param("username", "test1@example.com")
                         .param("password", "wrongpassword"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+                .andExpect(jsonPath("$.message").value("Invalid credentials"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test

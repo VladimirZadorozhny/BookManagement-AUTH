@@ -115,7 +115,8 @@ public class UserRentLogicTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("User with id " + userId + " has overdue books!")));
+                .andExpect(jsonPath("$.message").value(containsString("User with id " + userId + " has overdue books!")))
+                .andExpect(jsonPath("$.code").value("USER_HAS_OVERDUE_BOOKS"));
     }
 
     @Test
@@ -130,7 +131,8 @@ public class UserRentLogicTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("User with id " + userId + " has unpaid fines!")));
+                .andExpect(jsonPath("$.message").value(containsString("User with id " + userId + " has unpaid fines!")))
+                .andExpect(jsonPath("$.code").value("USER_HAS_UNPAID_FINES"));
     }
 
     @Test

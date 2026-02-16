@@ -64,7 +64,12 @@ public class SecurityConfig {
                         .failureHandler((request, response, exception) -> {
                             response.setStatus(401);
                             response.setContentType("application/json");
-                            response.getWriter().write("{\"message\": \"Invalid credentials\"}");
+                            String json = String.format(
+                                "{\"timestamp\":\"%s\",\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Invalid credentials\",\"path\":\"%s\",\"code\":\"UNAUTHORIZED\"}",
+                                java.time.OffsetDateTime.now().toString(),
+                                request.getRequestURI()
+                            );
+                            response.getWriter().write(json);
                         })
                         .permitAll()
                 )

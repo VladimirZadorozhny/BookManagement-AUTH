@@ -44,6 +44,9 @@ public class Book {
     @OneToMany(mappedBy = "book")
     private Set<Booking> bookings = new HashSet<>();
 
+    @Version
+    private Integer version;
+
     protected Book() {
         // Required by JPA
     }
