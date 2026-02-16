@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -24,7 +25,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({BookAlreadyBorrowedException.class, BookNotBorrowedException.class, EmailAlreadyExistsException.class,
             BookNotAvailableException.class, BookHasBookingsException.class, AuthorHasBooksException.class,
-            UserHasBookingsException.class, UserHasOverdueBooksException.class, UserHasUnpaidFinesException.class})
+            UserHasBookingsException.class, UserHasOverdueBooksException.class, UserHasUnpaidFinesException.class,
+            GenreHasBooksException.class})
     public ResponseEntity<ErrorResponse> handleConflictException(RuntimeException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI());
     }
@@ -40,6 +42,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied: " + ex.getMessage(), request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)

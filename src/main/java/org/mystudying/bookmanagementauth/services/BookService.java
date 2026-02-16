@@ -1,12 +1,14 @@
 package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Book;
+import org.mystudying.bookmanagementauth.domain.Genre;
 import org.mystudying.bookmanagementauth.dto.BookDetailDto;
 import org.mystudying.bookmanagementauth.dto.CreateBookRequestDto;
 import org.mystudying.bookmanagementauth.dto.UpdateBookRequestDto;
 import org.mystudying.bookmanagementauth.exceptions.AuthorNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.BookHasBookingsException;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
+import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.repositories.AuthorRepository;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
@@ -14,8 +16,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -84,9 +89,32 @@ public class BookService {
         // Validation of Author existence
         var author = authorRepository.findById(createBookRequestDto.authorId())
                 .orElseThrow(() -> new AuthorNotFoundException(createBookRequestDto.authorId()));
-        
-       return bookRepository.save(new Book(null, createBookRequestDto.title(), createBookRequestDto.year(),
-               author, createBookRequestDto.available()));
+
+        List<Long> requestedIds = createBookRequestDto.genreIds();
+
+        List<Genre> genres = genreRepository.findAllById(requestedIds);
+
+//        IDs that actually exist in DB
+        Set<Long> foundIds = genres.stream()
+                .map(Genre::getId)
+                .collect(Collectors.toSet());
+
+        Set<Long> missingIds = new HashSet<>(requestedIds);
+
+//        Remove all IDs that were found
+        missingIds.removeAll(foundIds);
+
+//        If anything remains -> those genres don't exist
+        if (!missingIds.isEmpty()) {
+            throw new GenreNotFoundException(missingIds.iterator().next());
+        }
+
+
+        Book book = new Book(null, createBookRequestDto.title(), createBookRequestDto.year(),
+                author, createBookRequestDto.available());
+        book.setGenres(new HashSet<>(genres));
+
+        return bookRepository.save(book);
     }
 
     @Transactional
@@ -95,10 +123,30 @@ public class BookService {
         var author = authorRepository.findById(updateBookRequestDto.authorId()).orElseThrow(() ->
                 new AuthorNotFoundException(updateBookRequestDto.authorId()));
 
+        List<Long> requestedIds = updateBookRequestDto.genreIds();
+
+        List<Genre> genres = genreRepository.findAllById(requestedIds);
+
+//        IDs that actually exist in DB
+        Set<Long> foundIds = genres.stream()
+                .map(Genre::getId)
+                .collect(Collectors.toSet());
+
+        Set<Long> missingIds = new HashSet<>(requestedIds);
+
+//        Remove all IDs that were found
+        missingIds.removeAll(foundIds);
+
+//        If anything remains -> those genres don't exist
+        if (!missingIds.isEmpty()) {
+            throw new GenreNotFoundException(missingIds.iterator().next());
+        }
+
         book.setTitle(updateBookRequestDto.title());
         book.setYear(updateBookRequestDto.year());
         book.setAvailable(updateBookRequestDto.available());
         book.setAuthor(author);
+        book.setGenres(new HashSet<>(genres));
 
         return book;
 

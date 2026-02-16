@@ -1,14 +1,15 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.dto.BookDto;
+import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
 import org.mystudying.bookmanagementauth.dto.GenreDto;
 import org.mystudying.bookmanagementauth.dto.GenreWithBooksDto;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.services.GenreService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -48,6 +49,26 @@ public class GenreController {
     @GetMapping("/name/{name}/books")
     public List<BookDto> getBooksByGenre(@PathVariable String name) {
         return genreService.findBooksByGenre(name);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public GenreDto createGenre(@Valid @RequestBody CreateGenreRequestDto requestDto) {
+        return genreService.save(requestDto);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public GenreDto updateGenre(@PathVariable long id, @Valid @RequestBody CreateGenreRequestDto requestDto) {
+        return genreService.update(id, requestDto);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteGenre(@PathVariable long id) {
+        genreService.deleteById(id);
     }
 }
 

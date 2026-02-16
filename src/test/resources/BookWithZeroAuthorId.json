@@ -2,5 +2,6 @@
     "title": "Book With Zero Author ID",
     "year": 2020,
     "authorId": 0,
-    "available": 10
+    "available": 10,
+    "genreIds": [1]
 }

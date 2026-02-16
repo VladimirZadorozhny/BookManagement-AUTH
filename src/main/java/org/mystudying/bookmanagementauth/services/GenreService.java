@@ -1,8 +1,8 @@
 package org.mystudying.bookmanagementauth.services;
 
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.GenreDto;
-import org.mystudying.bookmanagementauth.dto.GenreWithBooksDto;
+import org.mystudying.bookmanagementauth.domain.Genre;
+import org.mystudying.bookmanagementauth.dto.*;
+import org.mystudying.bookmanagementauth.exceptions.GenreHasBooksException;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
@@ -75,6 +75,32 @@ public class GenreService {
         return bookRepository.findByGenres_Id(id).stream()
                 .map(book -> new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable()))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public GenreDto save(CreateGenreRequestDto requestDto) {
+        Genre genre = new Genre(null, requestDto.name());
+        Genre saved = genreRepository.save(genre);
+        return new GenreDto(saved.getId(), saved.getName());
+    }
+
+    @Transactional
+    public GenreDto update(long id, CreateGenreRequestDto requestDto) {
+        Genre genre = genreRepository.findById(id)
+                .orElseThrow(() -> new GenreNotFoundException(id));
+        genre.setName(requestDto.name());
+        return new GenreDto(genre.getId(), genre.getName());
+    }
+
+    @Transactional
+    public void deleteById(long id) {
+        if (!genreRepository.existsById(id)) {
+            throw new GenreNotFoundException(id);
+        }
+        if (bookRepository.existsByGenres_Id(id)) {
+            throw new GenreHasBooksException(id);
+        }
+        genreRepository.deleteById(id);
     }
 }
 

@@ -213,6 +213,29 @@ public class BookControllerTest {
         assertThat(JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE)).isEqualTo(initialRowCount + 1);
     }
 
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createBookWithNotExistingGenreReturnsNotFoundGenre() throws Exception {
+        long initialRowCount = JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE);
+        String newBookJson = readJsonFile("correctBook.json").replace("\"genreIds\": [1]",
+                "\"genreIds\": [" + Long.MAX_VALUE + "]");
+
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(newBookJson))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Genre not found with id: " + Long.MAX_VALUE))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.path").value("/api/books"));
+
+
+        assertThat(JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOKS_TABLE, "title = 'New Book From Test'")).isEqualTo(0);
+        assertThat(JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE)).isEqualTo(initialRowCount);
+    }
+
+
+
+
     @ParameterizedTest
     @ValueSource(strings = {
             "BookWithEmptyTitle.json",
@@ -222,7 +245,8 @@ public class BookControllerTest {
             "BookWithZeroAuthorId.json",
             "BookWithoutAuthorId.json",
             "BookWithNegativeAvailable.json",
-            "BookWithoutAvailable.json"
+            "BookWithoutAvailable.json",
+            "BookWithNoGenres.json"
     })
     @WithMockUser(roles = "ADMIN")
     void createBookReturnsBadRequestForInvalidData(String fileName) throws Exception {

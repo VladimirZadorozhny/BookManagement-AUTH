@@ -1,9 +1,13 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +18,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -29,10 +33,12 @@ public class GenreControllerTest {
 
     private final MockMvc mockMvc;
     private final JdbcClient jdbcClient;
+    private final ObjectMapper objectMapper;
 
-    public GenreControllerTest(MockMvc mockMvc, JdbcClient jdbcClient) {
+    public GenreControllerTest(MockMvc mockMvc, JdbcClient jdbcClient, ObjectMapper objectMapper) {
         this.mockMvc = mockMvc;
         this.jdbcClient = jdbcClient;
+        this.objectMapper = objectMapper;
     }
 
     private long idOfTestGenre1() {
@@ -95,5 +101,61 @@ public class GenreControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].name").exists())
                 .andExpect(jsonPath("$[0].books").isArray());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createGenreReturnsCreated() throws Exception {
+        CreateGenreRequestDto request = new CreateGenreRequestDto("New Genre");
+        mockMvc.perform(post("/api/genres")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("New Genre"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateGenreReturnsOk() throws Exception {
+        long id = idOfTestGenre1();
+        CreateGenreRequestDto request = new CreateGenreRequestDto("Updated Genre");
+        mockMvc.perform(put("/api/genres/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated Genre"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteGenreFailsIfBooksExist() throws Exception {
+        long id = idOfTestGenre1(); // Test Genre 1 has books (Test Book 1 and Book For Deletion) in insertTestRecords.sql
+        mockMvc.perform(delete("/api/genres/{id}", id))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteGenreSucceedsIfNoBooks() throws Exception {
+        // 1. Create a genre via API
+        CreateGenreRequestDto request = new CreateGenreRequestDto("Temporary Genre");
+        String jsonResponse = mockMvc.perform(post("/api/genres")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        long id = JsonPath.parse(jsonResponse).read("$.id", Long.class);
+
+        // 2. Delete it via API
+        mockMvc.perform(delete("/api/genres/{id}", id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void userCannotDeleteGenre() throws Exception {
+        mockMvc.perform(delete("/api/genres/1"))
+                .andExpect(status().isForbidden());
     }
 }

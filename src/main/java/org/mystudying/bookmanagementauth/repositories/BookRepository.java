@@ -54,6 +54,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     boolean existsByAuthor(Author  author);
 
-
+    boolean existsByGenres_Id(Long genreId);
 }
 

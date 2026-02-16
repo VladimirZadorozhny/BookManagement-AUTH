@@ -1,5 +1,6 @@
 {
     "title": "Book Without Year",
     "authorId": 1,
-    "available": 10
+    "available": 10,
+    "genreIds": [1]
 }

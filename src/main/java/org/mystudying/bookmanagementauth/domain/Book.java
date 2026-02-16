@@ -135,6 +135,10 @@ public class Book {
         return getClass().hashCode();
     }
 
+    public void setGenres(Set<Genre> genres) {
+        this.genres = genres;
+    }
+
     public void setTitle(String title) {
         this.title = title;
     }

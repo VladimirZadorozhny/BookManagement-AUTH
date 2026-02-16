@@ -1,5 +1,6 @@
 {
     "year": 2020,
     "authorId": 1,
-    "available": 10
+    "available": 10,
+    "genreIds": [1]
 }

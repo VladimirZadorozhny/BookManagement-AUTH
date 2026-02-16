@@ -2,5 +2,6 @@
     "title": "Book with Future Year",
     "year": 2050,
     "authorId": 1,
-    "available": 10
+    "available": 10,
+    "genreIds": [1]
 }

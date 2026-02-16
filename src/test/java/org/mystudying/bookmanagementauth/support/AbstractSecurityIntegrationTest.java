@@ -1,5 +1,7 @@
 package org.mystudying.bookmanagementauth.support;
 
+import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
+import org.mystudying.bookmanagementauth.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +23,14 @@ public abstract class AbstractSecurityIntegrationTest {
     @Autowired
     protected MockMvc mockMvc;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    protected long idOfUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email))
+                .getId();
+    }
 
     protected MockHttpSession loginAs(String username, String password) throws Exception {
         MvcResult result = mockMvc.perform(
