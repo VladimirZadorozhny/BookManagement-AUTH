@@ -6,6 +6,7 @@ import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.dto.BookDetailDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,10 +22,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByGenres_Id(Long genreId);
 
 
-
-
     List<Book> findByGenres_NameIgnoreCase(String name);
-
 
 
     @Query("SELECT b FROM Book b JOIN b.author a WHERE a.name = :authorName ORDER BY b.title")
@@ -43,7 +41,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Optional<Book> findAndLockById(@Param("id") long id);
 
     @Query("SELECT new org.mystudying.bookmanagementauth.dto.BookDetailDto(b.id, b.title, b.year, b.available, a.name, a.id) " +
-           "FROM Book b JOIN b.author a WHERE b.id = :id")
+            "FROM Book b JOIN b.author a WHERE b.id = :id")
     Optional<BookDetailDto> findBookDetailsById(@Param("id") long id);
 
 
@@ -52,8 +50,17 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query("SELECT b FROM Book b JOIN b.author a WHERE a.name LIKE %:authorName% ORDER BY b.title")
     List<Book> findByAuthorNameContaining(@Param("authorName") String authorName);
 
-    boolean existsByAuthor(Author  author);
+    boolean existsByAuthor(Author author);
 
     boolean existsByGenres_Id(Long genreId);
+
+
+    @Modifying
+    @Query("""
+            UPDATE Book b
+            SET b.available = b.available - 1
+            WHERE b.id = :id AND b.available > 0
+            """)
+    int decrementAvailableIfInStock(@Param("id") Long id);
 }
 
