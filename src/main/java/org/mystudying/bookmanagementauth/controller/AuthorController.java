@@ -1,5 +1,6 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.domain.Author;
 import org.mystudying.bookmanagementauth.domain.Book;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/authors")
+@Tag(name = "Authors", description = "Management of authors")
 public class AuthorController {
 
     private final AuthorService authorService;
@@ -76,7 +78,6 @@ public class AuthorController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteAuthor(@PathVariable long id) {
-
         authorService.deleteById(id);
     }
 
@@ -88,5 +89,3 @@ public class AuthorController {
         return new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable());
     }
 }
-
-

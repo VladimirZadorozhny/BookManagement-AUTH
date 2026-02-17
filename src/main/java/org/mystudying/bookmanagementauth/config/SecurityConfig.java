@@ -32,7 +32,8 @@ public class SecurityConfig {
                         // 2. PUBLIC WEB & STATIC RESOURCES
                         .requestMatchers("/", "/index.html", "/login", "/register", "/css/**", "/js/**",
                                 "/books.html", "/authors.html", "/genres.html", "/reports.html",
-                                "/user.html", "/users.html", "/author.html", "/book.html").permitAll()
+                                "/user.html", "/users.html", "/author.html", "/book.html",
+                                "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // 3. PUBLIC AUTH (Login/Register APIs)
                         .requestMatchers("/api/auth/**").permitAll()

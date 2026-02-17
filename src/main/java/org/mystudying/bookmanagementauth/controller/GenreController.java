@@ -1,5 +1,6 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.dto.BookDto;
 import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
@@ -15,14 +16,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/genres")
+@Tag(name = "Genres", description = "Management of book genres")
 public class GenreController {
 
     private final GenreService genreService;
 
-
     public GenreController(GenreService genreService) {
         this.genreService = genreService;
-
     }
 
     @GetMapping
@@ -71,4 +71,3 @@ public class GenreController {
         genreService.deleteById(id);
     }
 }
-

@@ -1,5 +1,6 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.dto.BookDetailDto;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/books")
+@Tag(name = "Books", description = "Management of books catalog")
 public class BookController {
 
     private final BookService bookService;
@@ -112,5 +114,3 @@ public class BookController {
         return new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable());
     }
 }
-
-

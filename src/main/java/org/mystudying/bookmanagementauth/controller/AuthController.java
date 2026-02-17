@@ -1,5 +1,6 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.config.UserPrincipal;
 import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "Public endpoints for registration and session info")
 public class AuthController {
 
     private final UserService userService;

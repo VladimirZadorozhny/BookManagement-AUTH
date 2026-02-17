@@ -1,5 +1,6 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.dto.*;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "Users", description = "User management and booking operations")
 public class UserController {
 
     private final UserService userService;
@@ -22,8 +24,6 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
-
-
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -113,5 +113,3 @@ public class UserController {
         return new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable());
     }
 }
-
-
