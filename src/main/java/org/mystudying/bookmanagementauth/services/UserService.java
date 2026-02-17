@@ -1,5 +1,6 @@
 package org.mystudying.bookmanagementauth.services;
 
+import jakarta.persistence.EntityManager;
 import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.domain.Booking;
 import org.mystudying.bookmanagementauth.domain.Role;
@@ -30,17 +31,19 @@ public class UserService {
     private final BookingRepository bookingRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
 
     public UserService(UserRepository userRepository,
                        BookRepository bookRepository,
                        BookingRepository bookingRepository,
                        RoleRepository roleRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.bookingRepository = bookingRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.entityManager = entityManager;
     }
 
     public List<UserDto> findAll() {
@@ -120,11 +123,11 @@ public class UserService {
     public void payFine(long userId, long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BookNotBorrowedException());
-        
+
         if (booking.getUser().getId() != userId) {
-             throw new UserNotFoundException(userId); // Mismatch
+            throw new UserNotFoundException(userId); // Mismatch
         }
-        
+
         if (booking.getFine().compareTo(BigDecimal.ZERO) > 0 && !booking.isFinePaid()) {
             booking.setFinePaid(true);
         }
@@ -153,9 +156,9 @@ public class UserService {
                     createUserRequestDto.name(),
                     createUserRequestDto.email(),
                     passwordEncoder.encode(createUserRequestDto.password()));
-            
+
             roleRepository.findByName("ROLE_USER").ifPresent(user::addRole);
-            
+
             return toDto(userRepository.save(user));
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(createUserRequestDto.email());
@@ -168,15 +171,15 @@ public class UserService {
         try {
             user.setName(updateUserRequestDto.name());
             user.setEmail(updateUserRequestDto.email());
-            
+
             if (updateUserRequestDto.password() != null && !updateUserRequestDto.password().isBlank()) {
                 user.setPassword(passwordEncoder.encode(updateUserRequestDto.password()));
             }
-            
+
             if (updateUserRequestDto.active() != null) {
                 user.setActive(updateUserRequestDto.active());
             }
-            
+
             return toDto(userRepository.saveAndFlush(user));
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(user.getEmail());
@@ -195,7 +198,6 @@ public class UserService {
     @Transactional
     public void rentBook(long userId, long bookId) {
         User user = userRepository.findUserByIdWithBookings(userId).orElseThrow(() -> new UserNotFoundException(userId));
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
 
         if (bookingRepository.findActiveBooking(userId, bookId).isPresent()) {
             throw new BookAlreadyBorrowedException();
@@ -207,15 +209,25 @@ public class UserService {
         if (hasOverdue) {
             throw new UserHasOverdueBooksException(userId);
         }
-        
+
         boolean hasFines = user.getBookings().stream()
                 .anyMatch(b -> b.getFine().compareTo(BigDecimal.ZERO) > 0 && !b.isFinePaid());
         if (hasFines) {
-             throw new UserHasUnpaidFinesException(userId);
+            throw new UserHasUnpaidFinesException(userId);
         }
 
-        book.rentBook();
-        Booking booking = new Booking(user, book, LocalDate.now(), LocalDate.now().plusDays(14));
+        int updated = bookRepository.decrementAvailableIfInStock(bookId);
+
+        if (updated == 0) {
+            if (!bookRepository.existsById(bookId)) {
+                throw new BookNotFoundException(bookId);
+            } else {
+                throw new BookNotAvailableException(bookId);
+            }
+        }
+
+        Book bookRef = entityManager.getReference(Book.class, bookId);
+        Booking booking = new Booking(user, bookRef, LocalDate.now(), LocalDate.now().plusDays(14));
         user.addBooking(booking);
         bookingRepository.save(booking);
     }
