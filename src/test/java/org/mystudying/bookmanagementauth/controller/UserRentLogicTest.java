@@ -63,7 +63,7 @@ public class UserRentLogicTest {
         long bookId = idOfBook("Logic Book A");
 
         long activeBookings = JdbcTestUtils.countRowsInTableWhere(jdbcClient, "bookings",
-                "returned_at IS NULL AND user_id = " + userId + " AND book_id = " +  bookId);
+                "returned_at IS NULL AND user_id = " + userId + " AND book_id = " + bookId);
 
         MvcResult resultBook = mockMvc.perform(get("/api/books/{id}", bookId))
                 .andExpect(status().isOk())
@@ -86,20 +86,22 @@ public class UserRentLogicTest {
                         .content(requestJson))
                 .andExpect(status().isNoContent());
 
+//      Clear persistence context to force entity reload from DB, because we got stale entity from persistence context after atomic update
+        entityManager.clear();
         mockMvc.perform(get("/api/books/{id}", bookId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.available").value(initialAvailable - 1));
 
         mockMvc.perform(get("/api/users/{id}/bookings", userId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(initialBookings  + 1))
+                .andExpect(jsonPath("$.length()").value(initialBookings + 1))
                 .andExpect(jsonPath("$[?(@.bookId == " + bookId + ")]").isNotEmpty())
-                .andExpect(jsonPath("$[*].bookId").value(hasItem((int)bookId)));
+                .andExpect(jsonPath("$[*].bookId").value(hasItem((int) bookId)));
 
         // extra test to see the changes in DB
         entityManager.flush();
         assertThat(JdbcTestUtils.countRowsInTableWhere(jdbcClient, "bookings",
-                "returned_at IS NULL AND user_id = " + userId + " AND book_id = " +  bookId))
+                "returned_at IS NULL AND user_id = " + userId + " AND book_id = " + bookId))
                 .isEqualTo(activeBookings + 1);
     }
 
@@ -150,11 +152,11 @@ public class UserRentLogicTest {
                 .andExpect(status().isNoContent());
 
         entityManager.flush();
-        
+
         // Verify fine is calculated (should be 6.00 based on DATE_SUB(CURRENT_DATE, INTERVAL 6 DAY) as due_at)
         BigDecimal fine = jdbcClient.sql("SELECT fine FROM bookings WHERE user_id = ? AND book_id = ?")
                 .param(userId).param(bookId).query(BigDecimal.class).single();
-        
+
         assertThat(fine).isGreaterThan(BigDecimal.ZERO);
         assertThat(fine.stripTrailingZeros()).isEqualTo(new BigDecimal("6"));
     }
@@ -190,7 +192,8 @@ public class UserRentLogicTest {
         List<BookingResponseDto> bookingsByUser =
                 objectMapper.readValue(
                         jsonResponseBooking,
-                        new TypeReference<List<BookingResponseDto>>() {}
+                        new TypeReference<List<BookingResponseDto>>() {
+                        }
                 );
 //        check that we have unpaid fine after returning overdue book
         assertThat(bookingsByUser)
@@ -215,7 +218,7 @@ public class UserRentLogicTest {
         long bookingId = jdbcClient.sql("SELECT id FROM bookings WHERE user_id = ? AND book_id = ?")
                 .param(userId).param(bookIdOverdue).query(Long.class).single();
 
-        mockMvc.perform(post("/api/users/{userId}/bookings/{bookingId}/pay",  userId, bookingId));
+        mockMvc.perform(post("/api/users/{userId}/bookings/{bookingId}/pay", userId, bookingId));
 //        check that we do not have unpaid fines by this booking (with overdue book)
         resultUserBookings = mockMvc.perform(get("/api/users/{id}/bookings", userId))
                 .andExpect(status().isOk())
@@ -224,7 +227,8 @@ public class UserRentLogicTest {
         bookingsByUser =
                 objectMapper.readValue(
                         jsonResponseBooking,
-                        new TypeReference<List<BookingResponseDto>>() {}
+                        new TypeReference<List<BookingResponseDto>>() {
+                        }
                 );
         assertThat(bookingsByUser)
                 .noneMatch(booking -> booking.id() == bookingId && !booking.finePaid());

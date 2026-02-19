@@ -314,7 +314,7 @@ public class RentReturnControllerConcurrencyTest {
             assertThat(conflictCount).isEqualTo(statusCodes.size() - successCount);
 
             // Assert that code status of the requests is only (204 No Content = Book is rented) or (409 Conflict)
-            assertThat(statusCodes).containsExactlyElementsOf(List.of(204, 409));
+            assertThat(statusCodes).containsOnly(204, 409);
 
             // Verify final state in the database (can be checked without flush(), because
             // creating booking - is automatically flushed and visible in DB

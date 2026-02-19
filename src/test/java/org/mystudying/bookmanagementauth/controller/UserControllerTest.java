@@ -32,9 +32,11 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.security.test.context.support.TestExecutionEvent;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -247,12 +249,12 @@ public class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void createUserReturnsConflictForDuplicateEmail() throws Exception {
         String duplicateUserJson = """
-            {
-                "name": "Existing User",
-                "email": "test1@example.com",
-                "password": "password"
-            }
-            """;
+                {
+                    "name": "Existing User",
+                    "email": "test1@example.com",
+                    "password": "password"
+                }
+                """;
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(duplicateUserJson))
@@ -295,13 +297,13 @@ public class UserControllerTest {
         long id = idOfTestUser1();
         // Try to update user#1's email to user#2's email
         String duplicateEmailJson = """
-            {
-                "name": "Test User 1",
-                "email": "test2@example.com",
-                "password": "password",
-                "active": true
-            }
-            """;
+                {
+                    "name": "Test User 1",
+                    "email": "test2@example.com",
+                    "password": "password",
+                    "active": true
+                }
+                """;
         mockMvc.perform(put("/api/users/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(duplicateEmailJson))
@@ -368,8 +370,8 @@ public class UserControllerTest {
         mockMvc.perform(get("/api/users/{id}/books", rentUserId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(initialBooksByUser + 1))
-                .andExpect(jsonPath("$[*]").value(hasSize((int)initialBooksByUser + 1)))
-                        .andExpect(jsonPath("$[*].id").value(hasItem((int)rentableBookId)));
+                .andExpect(jsonPath("$[*]").value(hasSize((int) initialBooksByUser + 1)))
+                .andExpect(jsonPath("$[*].id").value(hasItem((int) rentableBookId)));
 
         mockMvc.perform(get("/api/books/{id}", rentableBookId))
                 .andExpect(status().isOk())
@@ -474,23 +476,28 @@ public class UserControllerTest {
                         .content(returnRequestJson))
                 .andExpect(status().isNoContent());
 
+//        With EM.flush() All pending INSERT/UPDATE/DELETE statements are executed immediately.
+        entityManager.flush();
+//      Clear persistence context to force entity reload from DB, because we got stale entity from persistence context after atomic update
+        entityManager.clear();
+
         mockMvc.perform(get("/api/books/{id}", rentableBookId))
                 .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.available").value(initialAvailable + 1));
+                .andExpect(jsonPath("$.available").value(initialAvailable + 1));
 
         mockMvc.perform(get("/api/users/{id}/books", rentUserId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(booksByUser - 1))
                 .andExpect(jsonPath("$[?(@.id == " + rentableBookId + ")]").isEmpty());
 
-//      extra test to see the changes in DB
-        entityManager.flush();
+//      extra test to see the changes in DB.
+
         // Booking should still exist (history), but should be marked returned
-        assertThat(JdbcTestUtils.countRowsInTable(jdbcClient, BOOKINGS_TABLE)).isEqualTo(initialBookings); 
-        
+        assertThat(JdbcTestUtils.countRowsInTable(jdbcClient, BOOKINGS_TABLE)).isEqualTo(initialBookings);
+
         // Check that active booking is gone (count of active bookings for this pair is 0)
         assertThat(JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOKINGS_TABLE, "returned_at IS NULL AND user_id = "
-                        + rentUserId + " AND book_id = " + rentableBookId))
+                + rentUserId + " AND book_id = " + rentableBookId))
                 .isEqualTo(0);
 
         // Check that returned booking exists
@@ -559,7 +566,7 @@ public class UserControllerTest {
         // 2. Delete all records from insertTestRecords.sql
         // Clear bookings first
         jdbcClient.sql("DELETE FROM " + BOOKINGS_TABLE + " WHERE user_id IN (SELECT id FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com'))").update();
-        
+
         // Clear book_genres
         jdbcClient.sql("DELETE FROM book_genres WHERE book_id IN (SELECT id FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2'))").update();
 
@@ -576,7 +583,8 @@ public class UserControllerTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.NOT_SUPPORTED) // Important for concurrency tests due @Transactional also in Service class that is used here in test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    // Important for concurrency tests due @Transactional also in Service class that is used here in test
     @WithMockUser(roles = "ADMIN")
     void rentBook_concurrentAccess_oneSucceedsOneFails() throws Exception {
         long user1Id = idOfRentUser();
@@ -640,7 +648,6 @@ public class UserControllerTest {
             });
         }
     }
-
 
 
 }

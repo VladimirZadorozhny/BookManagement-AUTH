@@ -144,7 +144,6 @@ public class BookService {
 
         book.setTitle(updateBookRequestDto.title());
         book.setYear(updateBookRequestDto.year());
-        book.setAvailable(updateBookRequestDto.available());
         book.setAuthor(author);
         book.setGenres(new HashSet<>(genres));
 

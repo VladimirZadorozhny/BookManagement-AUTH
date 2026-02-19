@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({BookAlreadyBorrowedException.class, BookNotBorrowedException.class, EmailAlreadyExistsException.class,
             BookNotAvailableException.class, BookHasBookingsException.class, AuthorHasBooksException.class,
             UserHasBookingsException.class, UserHasOverdueBooksException.class, UserHasUnpaidFinesException.class,
-            GenreHasBooksException.class})
+            GenreHasBooksException.class, InsufficientAvailableStockException.class})
     public ResponseEntity<ErrorResponse> handleConflictException(RuntimeException ex, HttpServletRequest request) {
         String code = "DATA_CONFLICT";
         if (ex instanceof BookNotAvailableException) code = "BOOK_NOT_AVAILABLE";

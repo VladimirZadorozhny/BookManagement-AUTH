@@ -32,18 +32,22 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
+    private final InventoryService inventoryService;
 
     public UserService(UserRepository userRepository,
                        BookRepository bookRepository,
                        BookingRepository bookingRepository,
                        RoleRepository roleRepository,
-                       PasswordEncoder passwordEncoder, EntityManager entityManager) {
+                       PasswordEncoder passwordEncoder,
+                       EntityManager entityManager,
+                       InventoryService inventoryService) {
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.bookingRepository = bookingRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.entityManager = entityManager;
+        this.inventoryService = inventoryService;
     }
 
     public List<UserDto> findAll() {
@@ -216,15 +220,7 @@ public class UserService {
             throw new UserHasUnpaidFinesException(userId);
         }
 
-        int updated = bookRepository.decrementAvailableIfInStock(bookId);
-
-        if (updated == 0) {
-            if (!bookRepository.existsById(bookId)) {
-                throw new BookNotFoundException(bookId);
-            } else {
-                throw new BookNotAvailableException(bookId);
-            }
-        }
+        inventoryService.decrementStock(bookId);
 
         Book bookRef = entityManager.getReference(Book.class, bookId);
         Booking booking = new Booking(user, bookRef, LocalDate.now(), LocalDate.now().plusDays(14));
@@ -247,7 +243,7 @@ public class UserService {
         booking.setReturnedAt(LocalDate.now());
         booking.setFine(booking.calculateFine());
 
-        booking.getBook().returnBook();
+        inventoryService.incrementStock(bookId);
     }
 
     private UserDto toDto(User user) {

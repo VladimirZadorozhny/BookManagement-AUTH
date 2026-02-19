@@ -1,7 +1,9 @@
 {
-    "title": "Updated Book Title",
-    "year": 2010,
-    "authorId": 1,
-    "available": 5,
-    "genreIds": [1, 2]
+  "title": "Updated Book Title",
+  "year": 2010,
+  "authorId": 1,
+  "genreIds": [
+    1,
+    2
+  ]
 }

@@ -62,5 +62,29 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             WHERE b.id = :id AND b.available > 0
             """)
     int decrementAvailableIfInStock(@Param("id") Long id);
+
+    @Modifying
+    @Query("""
+            UPDATE Book b
+            SET b.available = b.available + 1
+            WHERE b.id = :id
+            """)
+    int incrementAvailable(@Param("id") Long id);
+
+    @Modifying
+    @Query("""
+            UPDATE Book b
+            SET b.available = b.available + :amount
+            WHERE b.id = :id
+            """)
+    int incrementAvailableBy(@Param("id") Long id, @Param("amount") int amount);
+
+    @Modifying
+    @Query("""
+            UPDATE Book b
+            SET b.available = b.available - :amount
+            WHERE b.id = :id AND b.available >= :amount
+            """)
+    int decrementAvailableBy(@Param("id") Long id, @Param("amount") int amount);
 }
 

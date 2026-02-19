@@ -10,20 +10,29 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.jdbc.JdbcTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,15 +45,20 @@ public class BookControllerTest {
 
     private static final String BOOKS_TABLE = "books";
     private static final String AUTHORS_TABLE = "authors";
+    private static final String USERS_TABLE = "users";
+    private static final String BOOKINGS_TABLE = "bookings";
+
 
     private final MockMvc mockMvc;
     private final JdbcClient jdbcClient;
     private final EntityManager entityManager;
+    private final TransactionTemplate txTemplate;
 
-    public BookControllerTest(MockMvc mockMvc, JdbcClient jdbcClient, EntityManager entityManager) {
+    public BookControllerTest(MockMvc mockMvc, JdbcClient jdbcClient, EntityManager entityManager, TransactionTemplate txTemplate) {
         this.mockMvc = mockMvc;
         this.jdbcClient = jdbcClient;
         this.entityManager = entityManager;
+        this.txTemplate = txTemplate;
     }
 
     private long idOfTestBook1() {
@@ -73,6 +87,24 @@ public class BookControllerTest {
 
     private long idOfRentableBook() {
         return jdbcClient.sql("SELECT id FROM books WHERE title = 'Rentable Book'")
+                .query(Long.class)
+                .single();
+    }
+
+    private long idOfTestUser1() {
+        return jdbcClient.sql("select id from users where email = 'test1@example.com'")
+                .query(Long.class)
+                .single();
+    }
+
+    private long idOfTestUser2() {
+        return jdbcClient.sql("select id from users where email = 'test2@example.com'")
+                .query(Long.class)
+                .single();
+    }
+
+    private long idOfRentUser() {
+        return jdbcClient.sql("select id from users where email = 'rent@example.com'")
                 .query(Long.class)
                 .single();
     }
@@ -147,11 +179,11 @@ public class BookControllerTest {
                 .andReturn();
 
         long expectedDbCount = jdbcClient.sql("""
-                                              SELECT count(b.id)
-                                              FROM books b
-                                              JOIN authors a ON b.author_id = a.id
-                                              WHERE a.name = ?
-                                              """)
+                        SELECT count(b.id)
+                        FROM books b
+                        JOIN authors a ON b.author_id = a.id
+                        WHERE a.name = ?
+                        """)
                 .param(authorName)
                 .query(Long.class)
                 .single();
@@ -159,7 +191,7 @@ public class BookControllerTest {
         String jsonResponse = result.getResponse().getContentAsString();
         List<String> titles = JsonPath.parse(jsonResponse).read("$[*].title");
 
-        assertThat(titles).hasSize((int)expectedDbCount);
+        assertThat(titles).hasSize((int) expectedDbCount);
         assertThat(titles).contains("Test Book 1", "Rentable Book");
     }
 
@@ -234,8 +266,6 @@ public class BookControllerTest {
     }
 
 
-
-
     @ParameterizedTest
     @ValueSource(strings = {
             "BookWithEmptyTitle.json",
@@ -282,6 +312,77 @@ public class BookControllerTest {
         assertThat(JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOKS_TABLE, "id = " + id + " AND title = 'Updated Book Title'")).isEqualTo(1);
     }
 
+    //    Scenario: 2 Admins load same book, both edit title, one saves and	second → OptimisticLockException (in random order)
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    // Important for concurrency tests due @Transactional also in Service class that is used here in test
+//    @WithMockUser(roles = "ADMIN") - not necessary, direct injection in each request because of more strict rules on the URL-level. MockUser will not work with other Threads
+    void updateBookMetaDataConcurrentAccessOneSucceedsOneFails() throws Exception {
+        long bookId = idOfTestBook1();
+
+        MvcResult resultInitialBook = mockMvc.perform(get("/api/books/{id}", bookId))
+                .andExpect(status().isOk())
+                .andReturn();
+        String jsonResponse = resultInitialBook.getResponse().getContentAsString();
+        String initialTitle = JsonPath.read(jsonResponse, "$.title");
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        // Define two tasks, one for each Admin that are trying to update the same book's metadata (title).
+        Callable<Integer> task1 = new DelegatingSecurityContextCallable<>(() -> {
+            String updateRequestJson = readJsonFile("updatedBook.json").replace("\"title\": \"Updated Book Title\"",
+                    "\"title\": \"New Book Title Admin1\"");
+            return mockMvc.perform(put("/api/books/{id}", bookId)
+                            .with(user("admin").roles("ADMIN"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(updateRequestJson))
+                    .andReturn().getResponse().getStatus();
+        });
+
+        Callable<Integer> task2 = new DelegatingSecurityContextCallable<>(() -> {
+            String updateRequestJson = readJsonFile("updatedBook.json").replace("\"title\": \"Updated Book Title\"",
+                    "\"title\": \"New Book Title Admin2\"");
+            return mockMvc.perform(put("/api/books/{id}", bookId)
+                            .with(user("admin").roles("ADMIN"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(updateRequestJson))
+                    .andReturn().getResponse().getStatus();
+        });
+
+        List<Callable<Integer>> tasks = new ArrayList<>(List.of(task1, task2));
+
+        try {
+            // Invoke both tasks concurrently and collect their status codes
+            List<Integer> statusCodes = executor.invokeAll(tasks)
+                    .stream()
+                    .map(future -> {
+                        try {
+                            return future.get();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(Collectors.toList());
+
+            // Assert that one request succeeded (200) and the other - failed (409), but without guaranty which task did the job first; we check the set content but not the codes' order
+            assertThat(statusCodes).containsExactlyInAnyOrder(200, 409);
+
+            // Verify final state in the database
+            assertThat(JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOKS_TABLE, "id = " + bookId + " AND title = '" + initialTitle + "'")).isEqualTo(0);
+            assertThat(JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOKS_TABLE, "id = " + bookId +
+                    " AND (title = 'New Book Title Admin1' OR title = 'New Book Title Admin2')")).isEqualTo(1);
+
+
+        } finally {
+            executor.shutdown();
+            txTemplate.execute(status -> {
+                dbCleanup(idOfRentUser(), idOfTestUser2(), bookId);
+                return null;
+            });
+        }
+    }
+
+
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateBookReturnsNotFoundForUnknownId() throws Exception {
@@ -323,5 +424,35 @@ public class BookControllerTest {
     private String readJsonFile(String filename) throws IOException {
         return new ClassPathResource(filename).getContentAsString(StandardCharsets.UTF_8);
     }
+
+    // Helper method for manual cleanup in concurrency tests
+    // This cleanup is targeted to undo the specific changes made by the concurrency test,
+    // and also to clean up any test records inserted by @Sql.
+    private void dbCleanup(long user1Id, long user2Id, long bookId) {
+        // Order: bookings -> book_genres -> users_roles -> books -> authors -> users -> genres
+
+        // 1. Delete all bookings involving these users or this book
+        jdbcClient.sql("DELETE FROM " + BOOKINGS_TABLE + " WHERE user_id = ? OR user_id = ? OR book_id = ?")
+                .param(user1Id).param(user2Id).param(bookId).update();
+
+        // 2. Delete all records from insertTestRecords.sql
+        // Clear bookings first
+        jdbcClient.sql("DELETE FROM " + BOOKINGS_TABLE + " WHERE user_id IN (SELECT id FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com'))").update();
+
+        // Clear book_genres
+        jdbcClient.sql("DELETE FROM book_genres WHERE book_id IN (SELECT id FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2'))").update();
+
+        // Clear users_roles
+        jdbcClient.sql("DELETE FROM users_roles WHERE user_id IN (SELECT id FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com'))").update();
+
+        // Clear books
+        jdbcClient.sql("DELETE FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2')").update();
+
+        // Clear authors, users, genres
+        jdbcClient.sql("DELETE FROM " + AUTHORS_TABLE + " WHERE name IN ('Author For Deletion', 'Test Author 1', 'Test Author 2')").update();
+        jdbcClient.sql("DELETE FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com')").update();
+        jdbcClient.sql("DELETE FROM genres WHERE name IN ('Test Genre 1', 'Test Genre 2', 'Test Genre 3')").update();
+    }
+
 
 }

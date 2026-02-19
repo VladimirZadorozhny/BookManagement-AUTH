@@ -3,12 +3,10 @@ package org.mystudying.bookmanagementauth.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.domain.Book;
-import org.mystudying.bookmanagementauth.dto.BookDetailDto;
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.CreateBookRequestDto;
-import org.mystudying.bookmanagementauth.dto.UpdateBookRequestDto;
+import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.services.BookService;
+import org.mystudying.bookmanagementauth.services.InventoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +21,11 @@ import java.util.stream.Collectors;
 public class BookController {
 
     private final BookService bookService;
+    private final InventoryService inventoryService;
 
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, InventoryService inventoryService) {
         this.bookService = bookService;
+        this.inventoryService = inventoryService;
     }
 
     @GetMapping
@@ -101,6 +101,20 @@ public class BookController {
     @PreAuthorize("hasRole('ADMIN')")
     public BookDto updateBook(@PathVariable long id, @Valid @RequestBody UpdateBookRequestDto bookDto) {
         return toDto(bookService.update(id, bookDto));
+    }
+
+    @PostMapping("/{id}/inventory/replenish")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void replenish(@PathVariable long id, @Valid @RequestBody InventoryRequestDto request) {
+        inventoryService.replenish(id, request.amount());
+    }
+
+    @PostMapping("/{id}/inventory/write-off")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void writeOff(@PathVariable long id, @Valid @RequestBody InventoryRequestDto request) {
+        inventoryService.writeOff(id, request.amount());
     }
 
     @DeleteMapping("/{id}")

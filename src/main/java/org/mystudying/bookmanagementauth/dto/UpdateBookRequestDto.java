@@ -16,10 +16,6 @@ public record UpdateBookRequestDto(
         @Positive(message = "Author ID must be a positive number")
         Long authorId,
 
-        @NotNull(message = "Available count cannot be null")
-        @Min(value = 0, message = "Available count cannot be negative")
-        Integer available,
-
         @NotEmpty(message = "At least one genre must be selected")
         List<Long> genreIds
 ) {
