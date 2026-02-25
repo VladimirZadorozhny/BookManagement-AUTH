@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::section}, '')}">
+<head>
+    <title>Register - Library Management</title>
+</head>
+<body>
+<section>
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h2 class="h4 mb-0">Create Account</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form id="registerForm">
+                        <div id="registerError" class="alert alert-danger d-none"></div>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" name="name" id="name" required autofocus>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email address</label>
+                            <input type="email" class="form-control" name="email" id="email" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" id="password" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg text-white">Register</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light text-center py-3">
+                    Already have an account? <a th:href="@{/login}">Login here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Specific Script -->
+    <script th:src="@{/js/pages/register.js}"></script>
+</section>
+</body>
+</html>

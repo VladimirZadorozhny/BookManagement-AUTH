@@ -26,14 +26,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // 1. PUBLIC READ (Catalog)
+                        // 1. PUBLIC READ (Catalog & UI)
                         .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/authors/**", "/api/genres/**").permitAll()
+                        .requestMatchers("/", "/books", "/books/{id}", "/authors", "/authors/{id}", "/login", "/register", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
-                        // 2. PUBLIC WEB & STATIC RESOURCES
-                        .requestMatchers("/", "/index.html", "/login", "/register", "/css/**", "/js/**",
-                                "/books.html", "/authors.html", "/genres.html", "/reports.html",
-                                "/user.html", "/users.html", "/author.html", "/book.html",
-                                "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // 2. PUBLIC STATIC RESOURCES
+                        .requestMatchers("/css/**", "/js/**", "/favicon.ico").permitAll()
 
                         // 3. PUBLIC AUTH (Login/Register APIs)
                         .requestMatchers("/api/auth/**").permitAll()
@@ -78,6 +76,7 @@ public class SecurityConfig {
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(204);
+                            response.sendRedirect("/");
                         })
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, ~{::section}, 'wide-container')}">
+<head>
+    <title id="tabTitle">User Details - Library Management</title>
+</head>
+<body>
+<section th:data-user-id="${user?.id}"
+         th:data-is-admin="${#authorization.expression('hasRole(''ADMIN'')')}">
+    
+    <div id="personalInfoContent" class="card shadow-sm mb-4 d-none">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Personal Information</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Name:</strong> <span id="displayName">Loading...</span></p>
+            <p><strong>Email:</strong> <span id="displayEmail">Loading...</span></p>
+            <p><strong>Account Status:</strong> 
+                <span id="displayActiveStatus" class="badge">Active</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="bookingsContent" class="card shadow-sm d-none">
+        <div class="card-header bg-dark text-white">
+            <h5 id="bookingsListTitle" class="mb-0">My Bookings</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr id="bookings-table-header">
+                            <!-- Dynamic Headers -->
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-table-body">
+                        <!-- Bookings will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dynamicFormContent" class="card shadow-sm d-none">
+        <div class="card-header">
+            <h5 id="dynamicFormTitle" class="mb-0"></h5>
+        </div>
+        <div class="card-body" id="dynamicFormBody">
+            <!-- Forms or messages will be rendered here -->
+        </div>
+    </div>
+
+    <div id="loadingState" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Page Specific Scripts -->
+    <script th:src="@{/js/api/booksApi.js}"></script>
+    <script th:src="@{/js/api/usersApi.js}"></script>
+    <script th:src="@{/js/pages/user-details.js}"></script>
+</section>
+</body>
+</html>

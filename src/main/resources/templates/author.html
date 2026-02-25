@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, ~{::section}, '')}">
+<head>
+    <title id="tabTitle">Author Details - Library Management</title>
+</head>
+<body>
+<section th:data-author-id="${authorId}">
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/authors}">Authors</a></li>
+                    <li class="breadcrumb-item active" aria-current="page" id="breadcrumbName">Loading...</li>
+                </ol>
+            </nav>
+
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <div id="staticDetails" class="card shadow-sm mb-4 border-primary d-none">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0 h4 text-center" id="displayName">Author Name</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 text-center">
+                        <p class="mb-2"><strong>Birthdate:</strong> 
+                            <span class="h5" id="displayBirthdate">01 January 1970</span>
+                        </p>
+                        <p class="mb-0">
+                            <a id="linkAllBooks" href="#" class="btn btn-outline-primary mt-3">
+                                Show all author's books
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div sec:authorize="hasRole('ADMIN')" class="row g-2 pt-3 border-top">
+                        <div class="col-6">
+                            <button class="btn btn-warning w-100" id="btnShowEdit">Edit Details</button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-danger w-100" id="btnDelete">Delete Author</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <div id="editFormContainer" class="card shadow-sm mb-4 d-none border-warning" sec:authorize="hasRole('ADMIN')">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0 h5 text-center">Edit Author Details</h3>
+                </div>
+                <div class="card-body">
+                    <form id="editAuthorForm">
+                        <div class="mb-3">
+                            <label for="editName" class="form-label fw-bold">Full Name</label>
+                            <input type="text" class="form-control" id="editName" name="name" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="editBirthdate" class="form-label fw-bold">Birthdate</label>
+                            <input type="date" class="form-control" id="editBirthdate" name="birthdate" required>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" id="btnCancelEdit">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4" id="btnSaveAuthor" disabled>Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Specific Scripts -->
+    <script th:src="@{/js/api/authorsApi.js}"></script>
+    <script th:src="@{/js/pages/author-details.js}"></script>
+</section>
+</body>
+</html>

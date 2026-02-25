@@ -58,10 +58,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.returnedAt IS NULL AND b.dueAt BETWEEN :now AND :futureDate")
     Page<Booking> findDueSoonWithDetails(@Param("now") LocalDate now, @Param("futureDate") LocalDate futureDate, Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.book WHERE b.user.id IN " +
-            "(SELECT b2.user.id FROM Booking b2 WHERE b2.returnedAt IS NULL GROUP BY b2.user.id HAVING COUNT(b2) > :count)",
-            countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.user.id IN " +
-                    "(SELECT b2.user.id FROM Booking b2 WHERE b2.returnedAt IS NULL GROUP BY b2.user.id HAVING COUNT(b2) > :count)")
+    @Query(value = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.user u JOIN FETCH b.book WHERE b.returnedAt IS NULL AND " +
+            "(SELECT COUNT(b2) FROM Booking b2 WHERE b2.returnedAt IS NULL AND b2.user = u) >= :count",
+            countQuery = "SELECT COUNT(b) FROM Booking b WHERE b.returnedAt IS NULL AND " +
+                    "(SELECT COUNT(b2) FROM Booking b2 WHERE b2.returnedAt IS NULL AND b2.user = b.user) >= :count")
     Page<Booking> findBookingsForHeavyUsers(@Param("count") Long count, Pageable pageable);
 
     long countByBookId(Long bookId);

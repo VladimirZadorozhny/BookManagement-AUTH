@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<div th:fragment="sidebar(type)">
+    <!-- Book Specific Sidebar -->
+    <div th:if="${type == 'books'}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Find Books</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary text-start" id="btnAll">Show All</button>
+                    <button class="btn btn-outline-primary text-start" id="btnAvailable">Show Available Only</button>
+                    
+                    <div class="dropdown w-100">
+                        <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown">
+                            Filter By...
+                        </button>
+                        <ul class="dropdown-menu w-100">
+                            <li><a class="dropdown-item" href="#" id="linkByYear">By Year</a></li>
+                            <li><a class="dropdown-item" href="#" id="linkByAuthor">By Author Name</a></li>
+                            <li><a class="dropdown-item" href="#" id="linkByGenre">By Genre</a></li>
+                            <li><a class="dropdown-item" href="#" id="linkByTitle">By Title</a></li>
+                        </ul>
+                    </div>
+                    
+                    <button class="btn btn-outline-primary text-start" id="btnGrouped">Grouped by Genre</button>
+                    <button class="btn btn-outline-primary text-start" id="btnGenresList">Genres List</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mb-4" sec:authorize="hasRole('ADMIN')">
+            <button class="btn btn-success" id="btnShowCreateForm">Create New Book</button>
+        </div>
+    </div>
+
+    <!-- Author Specific Sidebar -->
+    <div th:if="${type == 'authors'}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Author Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary text-start" id="btnAllAuthors">Show All Authors</button>
+                    <div class="mb-3 mt-2">
+                        <label for="searchAuthorName" class="form-label small">Find Author</label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="searchAuthorName" class="form-control" placeholder="Name...">
+                            <button class="btn btn-primary" type="button" id="btnSearchAuthor">Find</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-grid gap-2 mb-4" sec:authorize="hasRole('ADMIN')">
+            <button class="btn btn-success" id="btnShowCreateAuthor">Add New Author</button>
+        </div>
+    </div>
+
+    <!-- Report Specific Sidebar -->
+    <div th:if="${type == 'reports'}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Report Filters</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="reportType" class="form-label">Report Type</label>
+                    <select id="reportType" class="form-select">
+                        <option th:each="type : ${T(org.mystudying.bookmanagementauth.dto.BookingReportType).values()}"
+                                th:value="${type}" th:text="${type.name().replace('_', ' ')}">Report Type</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="daysInputContainer" style="display: none;">
+                    <label for="days" class="form-label">Days</label>
+                    <input type="number" id="days" class="form-control" value="7">
+                </div>
+                <div class="mb-3" id="minActiveBooksInputContainer" style="display: none;">
+                    <label for="minActiveBooks" class="form-label">Min Active Books</label>
+                    <input type="number" id="minActiveBooks" class="form-control" value="3">
+                </div>
+                <button id="btnRunReport" class="btn btn-primary w-100">Run Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Sidebar -->
+    <div th:if="${type == 'user_profile'}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">User Actions</h5>
+            </div>
+            <div class="list-group list-group-flush" id="user-sidebar-list">
+                <button type="button" class="list-group-item list-group-item-action active" id="btnPersonalInfo">Personal Info</button>
+                <button type="button" class="list-group-item list-group-item-action" id="btnActiveBookings">Borrowed books</button>
+                <button type="button" class="list-group-item list-group-item-action" id="btnAllBookings">All Bookings</button>
+                <button type="button" class="list-group-item list-group-item-action text-danger" id="btnToggleActiveStatus" sec:authorize="hasRole('ADMIN')">Deactivate/Activate</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

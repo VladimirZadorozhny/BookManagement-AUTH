@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: layout(~{::title}, ~{::section}, '')}"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title id="tabTitle">Book Details - Library Management</title>
+</head>
+<body>
+<section th:data-book-id="${bookId}">
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/books}">Catalog</a></li>
+                    <li aria-current="page" class="breadcrumb-item active" id="breadcrumbTitle">Loading...</li>
+                </ol>
+            </nav>
+
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4 d-none" id="staticDetails">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0 h4 text-center" id="displayTitle">Book Title</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 border-bottom pb-3">
+                        <p class="mb-2"><strong>Author:</strong>
+                            <a class="text-decoration-none" id="displayAuthor" href="#">Author Name</a>
+                        </p>
+                        <p class="mb-2"><strong>Year:</strong> <span id="displayYear">2000</span></p>
+                        <p class="mb-2"><strong>Genres:</strong>
+                            <span id="displayGenres">
+                                <!-- Populated via JS -->
+                            </span>
+                        </p>
+                        <p class="mb-0"><strong>Status:</strong>
+                            <span id="displayStatus" class="fw-bold">Status</span>
+                            <span class="text-muted small" sec:authorize="hasRole('ADMIN')" id="displayAvailable"></span>
+                        </p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg d-none" id="btnRent" sec:authorize="isAuthenticated()">Rent this Book</button>
+                        <a class="btn btn-primary btn-lg d-none" id="btnLoginToRent" th:href="@{/login}" sec:authorize="!isAuthenticated()">Login to Rent</a>
+
+                        <div class="row g-2 mt-2" sec:authorize="hasRole('ADMIN')">
+                            <div class="col-6">
+                                <button class="btn btn-outline-warning w-100" id="btnShowEdit">Edit Metadata</button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-danger w-100" id="btnDelete">Delete Book</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <div class="card shadow-sm mb-4 d-none" id="editFormContainer" sec:authorize="hasRole('ADMIN')">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h3 class="mb-0 h5">Edit Book Metadata</h3>
+                </div>
+                <div class="card-body">
+                    <form id="editBookForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="editTitle">Title</label>
+                            <input class="form-control" id="editTitle" name="title" required type="text">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" for="editYear">Year</label>
+                                <input class="form-control" id="editYear" name="year" required type="number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold" for="editAuthorId">Author ID</label>
+                                <input class="form-control" id="editAuthorId" name="authorId" required type="number">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Genres (Hold Ctrl to multi-select)</label>
+                            <select class="form-select" id="editGenres" name="genreIds" multiple required size="5">
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button class="btn btn-secondary" id="btnCancelEdit" type="button">Cancel</button>
+                            <button class="btn btn-primary px-4" disabled id="btnSaveBook" type="submit">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Specific Scripts -->
+    <script th:src="@{/js/api/booksApi.js}"></script>
+    <script th:src="@{/js/pages/book-details.js}"></script>
+</section>
+</body>
+</html>

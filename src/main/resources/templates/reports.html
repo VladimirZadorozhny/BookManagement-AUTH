@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, ~{::section}, 'wide-container')}">
+<head>
+    <title>Admin Reports - Library Management</title>
+</head>
+<body>
+<section sec:authorize="hasRole('ADMIN')">
+    <h1 class="mb-4">Booking Reports</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 id="report-title" class="mb-0">Report Results</h5>
+        </div>
+        <div class="card-body p-0">
+            <div id="report-content" class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr id="report-header">
+                            <!-- Headers will be generated dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody id="report-body">
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">Select a report type from the sidebar and click "Run Report" to see results.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-center align-items-center" id="pagination-controls" style="display: none;">
+            <button id="prev-page" class="btn btn-outline-secondary btn-sm">Previous</button>
+            <span id="page-info" class="mx-3 text-muted"></span>
+            <button id="next-page" class="btn btn-outline-secondary btn-sm">Next</button>
+        </div>
+    </div>
+
+    <!-- Page Specific Scripts -->
+    <script th:src="@{/js/api/reportsApi.js}"></script>
+    <script th:src="@{/js/pages/reports.js}"></script>
+</section>
+</body>
+</html>

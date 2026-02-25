@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, ~{::section}, '')}">
+<head>
+    <title>Home - Library Management</title>
+</head>
+<body>
+<section>
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">Welcome to Library Management</h1>
+            <p class="lead mb-5">Manage your books, authors, and rentals with ease. A simple and robust system for library administration.</p>
+            
+            <div class="row g-4 mt-2">
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">Explore Catalog</h5>
+                            <p class="card-text text-muted">Browse our collection of books and see what's currently available for rent.</p>
+                            <a th:href="@{/books}" class="btn btn-primary">View Books</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-success">
+                        <div class="card-body">
+                            <h5 class="card-title">Our Authors</h5>
+                            <p class="card-text text-muted">Discover the talented writers behind our diverse collection of literature.</p>
+                            <a th:href="@{/authors}" class="btn btn-success text-white">View Authors</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

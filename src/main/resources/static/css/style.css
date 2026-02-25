@@ -16,510 +16,71 @@ header {
     padding: 1rem 0;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
 }
 
-/* Top Navigation Bar */
-nav {
-    background-color: #e9ecef;
-    padding: 0.5rem 0;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-nav ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-}
-
-nav ul li {
-    margin: 0 15px;
-}
-
-nav ul li a {
-    text-decoration: none;
-    color: #007bff;
-    padding: 10px 0;
-    display: inline-block;
-    font-weight: 500;
-}
-
-nav ul li a:hover {
-    color: #0056b3;
-}
-
-
-/* Main container for sidebar and content */
-.container {
-    display: flex;
-    flex: 1;
-}
-
-/* Sidebar Navigation */
-.sidebar {
-    width: 240px;
-    background-color: #fff;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-    border-right: 1px solid #dee2e6;
-    flex-shrink: 0;
-}
-
-.side-nav h3 {
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
-    padding-bottom: 10px;
-    margin-top: 0;
-    margin-bottom: 15px;
-}
-
-.side-button, .dropbtn {
+/* 10% Margins and Spacing (Default) */
+main.container-fluid {
+    padding-left: 10% !important;
+    padding-right: 10% !important;
     width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    text-align: left;
-    font-size: 16px;
-    transition: background-color 0.2s ease-in-out;
 }
 
-.side-button:hover, .dropbtn:hover {
-    background-color: #0056b3;
+/* Wide Container for Reports and User Details (5% Margins) */
+main.container-fluid.wide-container {
+    padding-left: 5% !important;
+    padding-right: 5% !important;
 }
 
-button:disabled, .disabled-button {
-    background-color: #6c757d;
-    cursor: not-allowed;
+/* Spacing between sidebar and main content */
+.col-md-3 {
+    padding-right: 2.5% !important;
+}
+.col-md-9 {
+    padding-left: 2.5% !important;
 }
 
-/* Dropdown specific styles */
-.dropdown {
-    position: relative;
-    display: block;
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-.dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #f1f1f1;
-    min-width: 100%;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 10;
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.dropdown-content a {
-    color: #333;
-    padding: 10px 15px;
-    text-decoration: none;
-    display: block;
-    font-size: 15px;
-}
-
-.dropdown-content a:hover {
-    background-color: #e9ecef;
-    color: #0056b3;
-}
-
-.dropdown:hover .dropdown-content {
-    display: block;
-}
-
-/* extra styling for dropdown disabling */
-.dropdown.blocked:hover .dropdown-content {
-    display: none;
-}
-.dropdown.blocked .dropbtn {
-    background-color: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-/* end extra styling */
-
-
-/* Main Content Area */
-.main-content {
-    flex-grow: 1;
-    padding: 20px;
-}
-
-/* Styles for centered main content on detail pages like book.html */
-.centered-main {
-    max-width: 800px;
-    margin: 20px auto;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-}
-
-.centered-main #static-details p {
-    margin-bottom: 10px;
-    font-size: 1.1em;
-}
-.centered-main #static-details strong {
-    color: #495057;
-    display: inline-block;
-    min-width: 80px;
-}
-
-.centered-main #edit-book-form div {
-    margin-bottom: 10px;
-}
-
-/* General form styling for action-forms container */
-#action-forms form {
-    background-color: #e9ecef;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
-#action-forms label {
-    font-weight: bold;
-    margin-bottom: 5px;
-    display: block;
-}
-#action-forms input[type="text"],
-#action-forms input[type="number"],
-#action-forms input[type="email"],
-#action-forms input[type="date"] {
-    width: calc(100% - 22px);
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-#action-forms button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-}
-#action-forms button:hover {
-    background-color: #0056b3;
-}
-
-/* Specific styling for centered-main forms (like Author edit form) */
-.centered-main #edit-author-form label {
-    /* Labels in edit form are bold by default because of #action-forms label */
-}
-.centered-main #edit-author-form .form-field-group {
-    margin-bottom: 15px; /* Spacing between form fields */
-}
-.centered-main #edit-author-form button {
-    margin-right: 10px; /* Spacing between buttons */
-    width: auto; /* Override default 100% width for side-button */
-    padding: 10px 20px;
-}
-
-/* Styling for forms within #action-forms (Users create/find forms) */
-#action-forms form .form-field-group {
-    margin-bottom: 15px; /* Spacing between form fields */
-}
-#action-forms form button {
-    margin-right: 10px; /* Spacing between buttons */
-    width: auto; /* Override default 100% width for side-button */
-    padding: 10px 20px;
-}
-#action-forms form button:last-child {
-    margin-right: 0; /* No right margin for the last button */
-}
-#action-forms form button:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-/* Specific styling for edit-user-form */
-.centered-main #edit-user-form .form-field-group {
-    margin-bottom: 15px; /* Spacing between form fields */
-}
-.centered-main #edit-user-form button {
-    margin-right: 10px; /* Spacing between buttons */
-    width: auto; /* Override default 100% width for side-button */
-    padding: 10px 20px;
-}
-.centered-main #edit-user-form button:last-child {
-    margin-right: 0; /* No right margin for the last button */
-}
-
-
-#results-separator {
-    border: 0;
-    border-top: 1px solid #dee2e6;
-    margin: 20px 0;
-}
-
-/* List styles */
-#books-list, #authors-list, #users-list {
-    list-style-type: none;
-    padding: 0;
-}
-
-#books-list li, #authors-list li, #users-list li {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    padding: 10px 15px;
-    margin-bottom: 8px;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#books-list li a, #authors-list li a, #users-list li a {
-    text-decoration: none;
-    color: #007bff;
-    font-weight: 600;
-    flex-grow: 1;
-}
-
-#books-list li a:hover, #authors-list li a:hover, #users-list li a:hover {
-    color: #0056b3;
-}
-
-#borrowed-books-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    border: 1px solid #dee2e6;
-    margin-bottom: 5px;
-    border-radius: 5px;
-}
-#borrowed-books-list button {
-    width: auto;
-    padding: 5px 10px;
-    font-size: 14px;
-    margin-left: 15px;
-}
-
-/* Grouped Genre Styles */
-.genre-group {
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    padding: 15px;
-    margin-bottom: 12px;
-    border-radius: 8px;
-    display: block !important; /* Override flex for the group container */
-}
-
-.genre-title {
-    font-size: 1.25em;
-    font-weight: 700;
-    color: #343a40;
-    display: block;
-    margin-bottom: 10px;
-    border-bottom: 2px solid #007bff;
-    padding-bottom: 5px;
-}
-
-.genre-books-list {
-    list-style-type: none;
-    padding: 0;
-    margin-left: 10px;
-}
-
-.genre-books-list li {
-    border: none !important;
-    padding: 5px 0 !important;
-    margin-bottom: 2px !important;
-    background: transparent !important;
-}
-
-.genre-books-list li a {
-    font-size: 1.1em;
-    color: #007bff;
-}
-
-/* Footer */
-footer {
-    text-align: center;
-    padding: 1rem 0;
-    background-color: #343a40;
-    color: #fff;
-    margin-top: auto;
-}
-
-/* Error Message */
-.fout {
-    color: #721c24;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    padding: 10px;
-    border-radius: 5px;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-/* Modal Styles */
-
-#modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-#modal-overlay.hidden {
-    display: none;
-}
-
-#modal-content {
-    background: #fff;
-    padding: 20px 30px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    min-width: 300px;
-    max-width: 500px;
-}
-
-#modal-buttons {
-    margin-top: 20px;
-    text-align: right;
-}
-
-#modal-buttons button {
-    margin-left: 10px;
-    padding: 8px 15px;
-    width: auto;
-}
-
-/* to hide elements */
-
-.hidden {
-    display: none;
-}
-
-/* Booking Status Styles */
-.booking-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    border: 1px solid #dee2e6;
-    margin-bottom: 8px;
-    border-radius: 5px;
-    background-color: #fff;
-    flex-wrap: wrap;
-}
-
-.booking-info {
-    flex: 1;
-    min-width: 250px;
-}
-
-.booking-actions {
-    margin-left: 15px;
-}
-
+/* Status Colors */
 .status-overdue {
-    color: #dc3545;
+    color: #dc3545 !important; /* Bootstrap danger red */
     font-weight: bold;
 }
 
 .status-near-due {
+    color: #ffc107 !important; /* Bootstrap warning yellow */
     font-weight: bold;
 }
 
-.btn-return-overdue {
-    background-color: #dc3545 !important;
+/* Unified Card Styling */
+.card {
+    border: 1px solid #dee2e6 !important; /* Gray border */
+    border-radius: 8px;
+    background-color: #fff;
+    color: #212529 !important; /* Black text */
 }
 
-.btn-return-near-due {
-    background-color: #ffc107 !important;
+.card-title {
+    color: #212529 !important; /* Force black title */
+    font-weight: bold;
+}
+
+.card-body {
     color: #212529 !important;
-    border: 1px solid #e0a800 !important;
 }
 
-.btn-pay-fine {
-    background-color: #dc3545 !important;
-}
-
-.booking-title {
-    font-weight: bold;
-    font-size: 1.1em;
-    margin-bottom: 5px;
-}
-
-.booking-title a {
-    text-decoration: none;
+/* Button Defaults */
+.btn-outline-primary {
     color: #007bff;
+    border-color: #007bff;
+    background-color: #fff;
 }
 
-.booking-details {
-    font-size: 0.95em;
-    color: #495057;
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
 }
 
-/* Report Styles */
-.filter-box {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #e9ecef;
-    border-radius: 5px;
+/* Utility classes */
+.hidden {
+    display: none !important;
 }
-
-.filter-input-number {
-    width: 60px;
-    padding: 5px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-}
-
-.btn-inline {
-    width: auto !important; /* Overrides .side-button 100% width */
-    padding: 5px 15px;
-    margin-left: 10px;
-}
-
-.report-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-}
-
-.report-table th {
-    padding: 10px;
-    border-bottom: 2px solid #dee2e6;
-    background-color: #e9ecef;
-    text-align: left;
-}
-
-.report-table td {
-    padding: 10px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.pagination-box {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-}
-
-.btn-pagination {
-    width: auto !important;
-}
-.main-content .loading .report-table { opacity: 0.4; transition: opacity 0.2s ease-in-out; }
-
-.pagination-box.hidden { display: none; }  /* to hide pagination's buttons if no records

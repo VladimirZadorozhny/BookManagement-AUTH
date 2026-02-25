@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: layout(~{::title}, ~{::section}, '')}"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Book Catalog - Library Management</title>
+</head>
+<body>
+<section th:data-is-admin="${#authorization.expression('hasRole(''ADMIN'')')}"
+         th:data-is-authenticated="${#authorization.expression('isAuthenticated()')}">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 id="pageTitle">Book Catalog</h1>
+    </div>
+
+    <!-- The grid is now entirely managed by books.js -->
+    <div class="row row-cols-1 row-cols-md-3 g-4" id="booksGrid">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for Filter Input -->
+    <div aria-hidden="true" class="modal fade" id="filterModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Filter Books</h5>
+                    <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="filterInput" id="filterInputLabel">Value</label>
+                        <input class="form-control" id="filterInput" type="text">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+                    <button class="btn btn-primary" id="btnApplyFilter" type="button">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Book Modal -->
+    <div aria-hidden="true" class="modal fade" id="createBookModal" sec:authorize="hasRole('ADMIN')" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Add New Book</h5>
+                    <button aria-label="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            type="button"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createBookForm">
+                        <div class="mb-3">
+                            <label class="form-label" for="createTitle">Title</label>
+                            <input class="form-control" id="createTitle" name="title" required type="text">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="createYear">Year</label>
+                                <input class="form-control" id="createYear" name="year" required type="number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="createAvailable">Initial Stock</label>
+                                <input class="form-control" id="createAvailable" min="0" name="available" required type="number"
+                                       value="1">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="createAuthorId">Author ID</label>
+                            <input class="form-control" id="createAuthorId" name="authorId" required type="number">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Genres (Hold Ctrl to select multiple)</label>
+                            <select class="form-select" id="createGenres" multiple name="genreIds" required size="5">
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+                    <button class="btn btn-success" id="btnSubmitCreateBook" type="button">Create Book</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Specific Scripts -->
+    <script th:src="@{/js/api/booksApi.js}"></script>
+    <script th:src="@{/js/pages/books.js}"></script>
+</section>
+</body>
+</html>
