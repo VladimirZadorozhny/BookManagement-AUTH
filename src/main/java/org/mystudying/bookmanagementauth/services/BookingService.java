@@ -37,6 +37,9 @@ public class BookingService {
             case RETURNED:
                 bookings = bookingRepository.findReturnedWithDetails(pageable);
                 break;
+            case OVERDUE:
+                bookings = bookingRepository.findOverdueWithDetails(now, pageable);
+                break;
             case FINES:
                 bookings = bookingRepository.findWithActualOrPotentialFines(now, pageable);
                 break;

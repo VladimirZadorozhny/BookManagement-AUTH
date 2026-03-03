@@ -20,6 +20,18 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final JsonAuthenticationSuccessHandler successHandler;
+    private final JsonAuthenticationFailureHandler failureHandler;
+    private final JsonLogoutSuccessHandler logoutSuccessHandler;
+
+    public SecurityConfig(JsonAuthenticationSuccessHandler successHandler,
+                          JsonAuthenticationFailureHandler failureHandler,
+                          JsonLogoutSuccessHandler logoutSuccessHandler) {
+        this.successHandler = successHandler;
+        this.failureHandler = failureHandler;
+        this.logoutSuccessHandler = logoutSuccessHandler;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    AuthenticationProvider authenticationProvider) throws Exception {
@@ -28,7 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 1. PUBLIC READ (Catalog & UI)
                         .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/authors/**", "/api/genres/**").permitAll()
-                        .requestMatchers("/", "/books", "/books/{id}", "/authors", "/authors/{id}", "/login", "/register", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/", "/books", "/books/{id}", "/authors", "/authors/{id}", "/login", "/register", "/verify", "/reset-password", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
 
                         // 2. PUBLIC STATIC RESOURCES
                         .requestMatchers("/css/**", "/js/**", "/favicon.ico").permitAll()
@@ -40,6 +52,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")
+                        
+                        // Specialized Inventory Endpoints (also covered by /api/books/** above, but good for clarity)
+                        .requestMatchers("/api/books/*/inventory/**").hasRole("ADMIN")
 
                         // 5. ADMIN-ONLY REPORTS & USER MANAGEMENT
                         .requestMatchers("/api/reports/**").hasRole("ADMIN")
@@ -55,29 +70,13 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login") // Keep standard URL for frontend
                         .loginProcessingUrl("/api/auth/login") // Specific API endpoint
-                        .successHandler((request, response, authentication) -> {
-                            response.setStatus(200);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"message\": \"Login successful\"}");
-                        })
-                        .failureHandler((request, response, exception) -> {
-                            response.setStatus(401);
-                            response.setContentType("application/json");
-                            String json = String.format(
-                                "{\"timestamp\":\"%s\",\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Invalid credentials\",\"path\":\"%s\",\"code\":\"UNAUTHORIZED\"}",
-                                java.time.OffsetDateTime.now().toString(),
-                                request.getRequestURI()
-                            );
-                            response.getWriter().write(json);
-                        })
+                        .successHandler(successHandler)
+                        .failureHandler(failureHandler)
                         .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(204);
-                            response.sendRedirect("/");
-                        })
+                        .logoutSuccessHandler(logoutSuccessHandler)
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .permitAll()

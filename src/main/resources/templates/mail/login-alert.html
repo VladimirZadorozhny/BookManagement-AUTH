@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Alert</title>
+</head>
+<body>
+    <p>Dear <span th:text="${userName}">User</span>,</p>
+
+    <p>We noticed a new login to your Book Management account on <span th:text="${loginTime}">[Login Time]</span>.</p>
+    
+    <p>If this was you, you can safely ignore this email.</p>
+    <p>If this was not you, please change your password immediately or contact support.</p>
+
+    <p>Thank you!</p>
+</body>
+</html>

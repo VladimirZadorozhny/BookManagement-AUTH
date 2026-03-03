@@ -120,16 +120,18 @@ class UserDetailsPage {
     async fetchAndRenderBookings(filterBorrowed = false) {
         try {
             const response = await usersApi.listBookings(this.userId);
-            if (!response.ok) throw new Error('Failed to fetch bookings');
-            
-            let bookings = await response.json();
-            
-            if (filterBorrowed) {
-                // Logic: Show only active bookings OR bookings with unpaid fines.
-                bookings = bookings.filter(b => !b.returnedAt || (b.fine > 0 && !b.finePaid));
-            }
+            if (response.ok) {
+                let bookings = await response.json();
+                
+                if (filterBorrowed) {
+                    // Logic: Show only active bookings OR bookings with unpaid fines.
+                    bookings = bookings.filter(b => !b.returnedAt || (b.fine > 0 && !b.finePaid));
+                }
 
-            this.renderBookingsTable(bookings);
+                this.renderBookingsTable(bookings);
+            } else {
+                await api.showError(response, 'Failed to fetch bookings');
+            }
         } catch (e) {
             this.bookingsTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">Failed to load bookings.</td></tr>`;
         }

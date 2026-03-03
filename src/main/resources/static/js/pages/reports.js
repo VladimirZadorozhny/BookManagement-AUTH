@@ -47,6 +47,14 @@ class ReportsPage {
                 this.loadReport();
             }
         });
+
+        // Global row click for individual notifications
+        this.reportBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-notify-row');
+            if (btn) {
+                this.handleNotifyUser(btn.dataset.userId, btn.dataset.userName);
+            }
+        });
     }
 
     handleReportTypeChange() {
@@ -74,21 +82,36 @@ class ReportsPage {
 
             if (response.ok) {
                 const pageData = await response.json();
-                this.renderReport(pageData);
+                this.renderReport(pageData, type);
             } else {
                 await api.showError(response, "Failed to load report.");
             }
         } catch (error) {
-            console.error('Error fetching report:', error);
+            // Network errors handled by api.js
         } finally {
             this.reportContent.classList.remove("loading");
         }
     }
 
-    renderReport(pageData) {
+    renderReport(pageData, type) {
         const content = pageData.content;
-        const headers = ["User", "Email", "Book", "Borrowed", "Returned", "Overdue", "Fine", "Fine Paid", "Status"];
-        this.reportHeader.innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+        const headers = ["User", "Email", "Book", "Borrowed", "Returned", "Overdue", "Fine", "Fine Paid", "Status", "Actions"];
+        
+        // Add Notify All button to header for specific reports
+        let headersHtml = headers.map(h => `<th>${h}</th>`).join('');
+        if (type === 'HEAVY_USERS' || type === 'OVERDUE') {
+            headersHtml = headersHtml.replace('<th>Actions</th>', `
+                <th>
+                    Actions
+                    <button class="btn btn-sm btn-warning ms-2" id="btnNotifyAll">Notify All</button>
+                </th>`);
+        }
+        this.reportHeader.innerHTML = headersHtml;
+
+        const btnNotifyAll = byId('btnNotifyAll');
+        if (btnNotifyAll) {
+            btnNotifyAll.onclick = () => this.handleNotifyAll(type);
+        }
         
         if (!content || content.length === 0) {
             this.reportBody.innerHTML = `<tr><td colspan="${headers.length}" class="text-center py-5 text-muted">No records found for this report.</td></tr>`;
@@ -99,7 +122,7 @@ class ReportsPage {
         const fragment = document.createDocumentFragment();
         content.forEach(b => {
             const tr = document.createElement('tr');
-            const { userName, userEmail, bookTitle, borrowedAt, returnedAt, overdueDays, fine, finePaid } = b;
+            const { userId, userName, userEmail, bookTitle, borrowedAt, returnedAt, overdueDays, fine, finePaid } = b;
 
             const isReturned = !!returnedAt;
             const overdueDisplay = overdueDays > 0 ? `${overdueDays} days` : "-";
@@ -133,6 +156,12 @@ class ReportsPage {
                 <td class="${fineClass}">${fineDisplay}</td>
                 <td class="${finePaidClass}">${finePaidText}</td>
                 <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary btn-notify-row" 
+                            data-user-id="${userId}" data-user-name="${userName}">
+                        Notify
+                    </button>
+                </td>
             `;
             fragment.appendChild(tr);
         });
@@ -149,6 +178,52 @@ class ReportsPage {
         this.prevPageButton.disabled = (this.currentPage === 0);
         this.nextPageButton.disabled = (this.currentPage >= this.totalPages - 1);
         this.paginationControls.style.display = 'flex';
+    }
+
+    async handleNotifyUser(userId, userName) {
+        const subject = await modal.prompt(`Message Subject for ${userName}:`, "Library Notification");
+        if (subject === null) return;
+        const body = await modal.prompt(`Message Body for ${userName}:`, "Please check your account for updates.");
+        if (body === null) return;
+
+        try {
+            const resp = await adminMailApi.notifySingleUser(userId, subject, body);
+            if (resp.ok) {
+                await modal.alert(`Notification queued for ${userName}.`);
+            } else {
+                await api.showError(resp, "Failed to send notification.");
+            }
+        } catch (e) {
+            // Handled by api.js
+        }
+    }
+
+    async handleNotifyAll(type) {
+        const confirmed = await modal.confirm(`Send custom notifications to ALL users in this report?`);
+        if (!confirmed) return;
+
+        const subject = await modal.prompt("Bulk Message Subject:", "Library Notification");
+        if (subject === null) return;
+        const body = await modal.prompt("Bulk Message Body:", "This is a custom notification regarding your library account.");
+        if (body === null) return;
+
+        try {
+            let resp;
+            if (type === 'HEAVY_USERS') {
+                const minBooks = byId('minActiveBooks').value || 5;
+                resp = await adminMailApi.notifyHeavyUsers(subject, body, minBooks);
+            } else if (type === 'OVERDUE') {
+                resp = await adminMailApi.notifyOverdueUsers(subject, body);
+            }
+
+            if (resp && resp.ok) {
+                await modal.alert("Bulk notifications queued successfully.");
+            } else if (resp) {
+                await api.showError(resp, "Failed to queue bulk notifications.");
+            }
+        } catch (e) {
+            // Handled by api.js
+        }
     }
 }
 

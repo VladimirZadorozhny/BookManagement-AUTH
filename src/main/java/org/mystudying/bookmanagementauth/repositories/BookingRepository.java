@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,6 +65,27 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     "(SELECT COUNT(b2) FROM Booking b2 WHERE b2.returnedAt IS NULL AND b2.user = b.user) >= :count")
     Page<Booking> findBookingsForHeavyUsers(@Param("count") Long count, Pageable pageable);
 
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user u JOIN FETCH b.book WHERE b.returnedAt IS NULL AND u.active = TRUE AND " +
+            "(SELECT COUNT(b2) FROM Booking b2 WHERE b2.returnedAt IS NULL AND b2.user = u AND b2.user.active = TRUE) >= :count")
+    List<Booking> findHeavyUserBookingsForMailing(@Param("count") Long count); // New method for mailing
+
     long countByBookId(Long bookId);
+
+    // --- New Reminder Queries ---
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user u JOIN FETCH b.book WHERE b.returnedAt IS NULL AND u.active = TRUE AND b.dueAt BETWEEN :now AND :threeDaysLater")
+    List<Booking> findBookingsDueInDays(@Param("now") OffsetDateTime now, @Param("threeDaysLater") OffsetDateTime threeDaysLater);
+
+    @Query("SELECT b FROM Booking b JOIN FETCH b.user u JOIN FETCH b.book WHERE b.returnedAt IS NULL AND u.active = TRUE AND b.dueAt BETWEEN :startOfDay AND :endOfDay")
+    List<Booking> findBookingsDueToday(@Param("startOfDay") OffsetDateTime startOfDay, @Param("endOfDay") OffsetDateTime endOfDay);
+
+    @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt BETWEEN :now AND :threeDaysLater")
+    List<Long> findBookingIdsDueInDays(@Param("now") OffsetDateTime now, @Param("threeDaysLater") OffsetDateTime threeDaysLater);
+
+    @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt BETWEEN :startOfDay AND :endOfDay")
+    List<Long> findBookingIdsDueToday(@Param("startOfDay") OffsetDateTime startOfDay, @Param("endOfDay") OffsetDateTime endOfDay);
+
+    @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt < :oneDayAgo AND b.dueAt > :twoDaysAgo")
+    List<Long> findBookingIdsOverdueByDays(@Param("oneDayAgo") OffsetDateTime oneDayAgo, @Param("twoDaysAgo") OffsetDateTime twoDaysAgo);
 }
+
 

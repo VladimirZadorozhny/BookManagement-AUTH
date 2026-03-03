@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Due Today Reminder</title>
+</head>
+<body>
+    <p>Dear <span th:text="${userName}">User</span>,</p>
+
+    <p>Your borrowed book <strong>'<span th:text="${bookTitle}">Book Title</span>'</strong> is due today, <span th:text="${dueDate}">[Due Date]</span>.</p>
+    <p>Kindly return it as soon as possible.</p>
+
+    <p>Thank you!</p>
+</body>
+</html>

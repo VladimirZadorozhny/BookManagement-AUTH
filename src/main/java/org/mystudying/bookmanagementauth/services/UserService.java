@@ -5,12 +5,19 @@ import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.domain.Booking;
 import org.mystudying.bookmanagementauth.domain.Role;
 import org.mystudying.bookmanagementauth.domain.User;
+import org.mystudying.bookmanagementauth.domain.VerificationToken;
+import org.mystudying.bookmanagementauth.domain.PasswordResetToken;
 import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.*;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
 import org.mystudying.bookmanagementauth.repositories.RoleRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
+import org.mystudying.bookmanagementauth.repositories.VerificationTokenRepository;
+import org.mystudying.bookmanagementauth.repositories.PasswordResetTokenRepository;
+import org.springframework.context.ApplicationEventPublisher;
+import org.mystudying.bookmanagementauth.events.UserRegisteredEvent;
+import org.mystudying.bookmanagementauth.events.PasswordResetRequestedEvent;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,8 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +42,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
     private final InventoryService inventoryService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     public UserService(UserRepository userRepository,
                        BookRepository bookRepository,
@@ -40,7 +52,10 @@ public class UserService {
                        RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder,
                        EntityManager entityManager,
-                       InventoryService inventoryService) {
+                       InventoryService inventoryService,
+                       ApplicationEventPublisher eventPublisher,
+                       VerificationTokenRepository verificationTokenRepository,
+                       PasswordResetTokenRepository passwordResetTokenRepository) {
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.bookingRepository = bookingRepository;
@@ -48,6 +63,9 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
         this.entityManager = entityManager;
         this.inventoryService = inventoryService;
+        this.eventPublisher = eventPublisher;
+        this.verificationTokenRepository = verificationTokenRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
     public List<UserDto> findAll() {
@@ -144,10 +162,22 @@ public class UserService {
                     registerRequestDto.name(),
                     registerRequestDto.email(),
                     passwordEncoder.encode(registerRequestDto.password()));
+            user.setActive(false); // New user starts as inactive until verified
 
             roleRepository.findByName("ROLE_USER").ifPresent(user::addRole);
 
-            return toDto(userRepository.save(user));
+            User savedUser = userRepository.save(user);
+
+            String token = UUID.randomUUID().toString();
+            VerificationToken verificationToken = new VerificationToken(
+                    token,
+                    savedUser,
+                    OffsetDateTime.now().plusHours(24) // Token expires in 24 hours
+            );
+            verificationTokenRepository.save(verificationToken);
+
+            eventPublisher.publishEvent(new UserRegisteredEvent(savedUser.getId(), savedUser.getEmail(), savedUser.getName(), token)); // Publish event with token and name
+            return toDto(savedUser);
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(registerRequestDto.email());
         }
@@ -160,13 +190,53 @@ public class UserService {
                     createUserRequestDto.name(),
                     createUserRequestDto.email(),
                     passwordEncoder.encode(createUserRequestDto.password()));
+            // Admin created users are active by default, no verification email
 
             roleRepository.findByName("ROLE_USER").ifPresent(user::addRole);
 
-            return toDto(userRepository.save(user));
+            User savedUser = userRepository.save(user);
+            // No event published for admin-created users; no email verification needed
+            return toDto(savedUser);
         } catch (DataIntegrityViolationException e) {
             throw new EmailAlreadyExistsException(createUserRequestDto.email());
         }
+    }
+
+    @Transactional
+    public void requestPasswordReset(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken passwordResetToken = new PasswordResetToken(
+                token,
+                user,
+                OffsetDateTime.now().plusHours(2) // Token expires in 2 hours
+        );
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        eventPublisher.publishEvent(new PasswordResetRequestedEvent(user.getEmail(), token));
+    }
+
+    @Transactional
+    public void resetPassword(String tokenValue, String newPassword) {
+        PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
+                .orElseThrow(() -> new InvalidTokenException("Invalid password reset token."));
+
+        if (token.isUsed()) {
+            throw new TokenAlreadyUsedException("Password reset token has already been used.");
+        }
+
+        if (token.isExpired()) {
+            throw new TokenExpiredException("Password reset token has expired.");
+        }
+
+        User user = token.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        // userRepository.save(user); // Redundant save, as user is managed
+
+        token.setUsed(true);
+        // passwordResetTokenRepository.save(token); // Redundant save, as token is managed
     }
 
     @Transactional
@@ -258,4 +328,3 @@ public class UserService {
         );
     }
 }
-

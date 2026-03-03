@@ -62,6 +62,15 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Access denied: " + ex.getMessage(), request.getRequestURI(), "ACCESS_DENIED");
     }
 
+    @ExceptionHandler({TokenExpiredException.class, TokenAlreadyUsedException.class, InvalidTokenException.class})
+    public ResponseEntity<ErrorResponse> handleTokenExceptions(RuntimeException ex, HttpServletRequest request) {
+        String code = "INVALID_TOKEN";
+        if (ex instanceof TokenExpiredException) code = "TOKEN_EXPIRED";
+        if (ex instanceof TokenAlreadyUsedException) code = "TOKEN_ALREADY_USED";
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI(), code);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request.getRequestURI(), "INTERNAL_SERVER_ERROR");

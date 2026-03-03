@@ -32,5 +32,13 @@ window.booksApi = {
 
     getWithDetails(id) {
         return api.get(`/api/books/${id}/details`);
+    },
+
+    replenish(id, amount) {
+        return api.post(`/api/books/${id}/inventory/replenish`, { amount });
+    },
+
+    writeOff(id, amount) {
+        return api.post(`/api/books/${id}/inventory/write-off`, { amount });
     }
 };

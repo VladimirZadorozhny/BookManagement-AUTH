@@ -56,6 +56,15 @@
                                 <button class="btn btn-outline-danger w-100" id="btnDelete">Delete Book</button>
                             </div>
                         </div>
+
+                        <div class="row g-2 mt-1" sec:authorize="hasRole('ADMIN')">
+                            <div class="col-6">
+                                <button class="btn btn-outline-success w-100" id="btnReplenish">Replenish Stock</button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-outline-secondary w-100" id="btnWriteOff">Write-off Stock</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

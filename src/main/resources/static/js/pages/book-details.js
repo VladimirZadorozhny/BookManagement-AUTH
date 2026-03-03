@@ -40,6 +40,9 @@ class BookDetailsPage {
         byId('btnCancelEdit')?.addEventListener('click', () => this.hideEditForm());
         byId('btnDelete')?.addEventListener('click', () => this.handleDelete());
 
+        byId('btnReplenish')?.addEventListener('click', () => this.handleInventory('replenish'));
+        byId('btnWriteOff')?.addEventListener('click', () => this.handleInventory('write-off'));
+
         this.editForm?.addEventListener('input', () => this.checkFormChanges());
         this.editForm?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -202,6 +205,33 @@ class BookDetailsPage {
                 modal.error("A network error occurred. Please try again.");
             });
     }
+
+    async handleInventory(action) {
+        const amount = await modal.prompt(`Enter amount to ${action}:`, "1");
+        if (amount === null) return;
+
+        const val = parseInt(amount);
+        if (isNaN(val) || val <= 0) return modal.error("Please enter a valid positive number.");
+
+        const btn = action === 'replenish' ? byId('btnReplenish') : byId('btnWriteOff');
+        
+        await withLoading(btn, async () => {
+            try {
+                const response = action === 'replenish' 
+                    ? await booksApi.replenish(this.bookId, val)
+                    : await booksApi.writeOff(this.bookId, val);
+
+                if (response.ok) {
+                    await modal.alert("Inventory updated!");
+                    await this.fetchAndDisplayDetails();
+                } else {
+                    await api.showError(response, "Failed to update inventory.");
+                }
+            } catch (e) {
+                // Handled by api.js
+            }
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -218,4 +248,5 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle case where bookId is not provided or is 0, indicating book not found.
         byId('loadingState').innerHTML = '<div class="alert alert-danger">Book not found or invalid ID.</div>';
 
+    }
 });

@@ -29,12 +29,15 @@ class AuthorsPage {
     async loadAuthors(url, title = 'Authors') {
         try {
             const response = await api.get(url);
-            const authors = await response.json();
-            this.pageTitle.textContent = title;
-            this.renderAuthors(authors);
+            if (response.ok) {
+                const authors = await response.json();
+                this.pageTitle.textContent = title;
+                this.renderAuthors(authors);
+            } else {
+                await api.showError(response, 'Failed to load authors');
+            }
         } catch (error) {
-            console.error('Error loading authors:', error);
-            modal.error('Failed to load authors');
+            // Network errors handled by api.js
         }
     }
 

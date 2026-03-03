@@ -35,7 +35,10 @@ class UsersPage {
     async fetchAndRenderUsers(url = '/api/users') {
         try {
             const response = await api.get(url);
-            if (!response.ok) throw new Error('Failed to fetch users');
+            if (!response.ok) {
+                await api.showError(response, 'Failed to fetch users');
+                return;
+            }
             
             let users = await response.json();
             
@@ -46,7 +49,7 @@ class UsersPage {
 
             this.renderUsers(users);
         } catch (error) {
-            console.error('Error loading users:', error);
+            // Network errors handled by api.js
             this.userListBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Failed to load users.</td></tr>';
         }
     }
@@ -92,13 +95,17 @@ class UsersPage {
         const payload = serializeForm(form);
 
         await withLoading(byId('btnSubmitCreate'), async () => {
-            const response = await usersApi.create(payload);
-            if (response.ok) {
-                await modal.alert("User created successfully!");
-                this.createModal.hide();
-                this.fetchAndRenderUsers();
-            } else {
-                await api.showError(response, "Failed to create user.");
+            try {
+                const response = await usersApi.create(payload);
+                if (response.ok) {
+                    await modal.alert("User created successfully!");
+                    this.createModal.hide();
+                    this.fetchAndRenderUsers();
+                } else {
+                    await api.showError(response, "Failed to create user.");
+                }
+            } catch (e) {
+                // Handled by api.js
             }
         });
     }
@@ -117,7 +124,7 @@ class UsersPage {
                     await api.showError(response, `Operation failed.`);
                 }
             } catch (error) {
-                modal.error("An error occurred.");
+                // Handled by api.js
             }
         }
     }

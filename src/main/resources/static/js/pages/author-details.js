@@ -116,17 +116,17 @@ class AuthorDetailsPage {
         const confirmed = await modal.confirm("Are you sure you want to delete this author? This will fail if they have books.");
         if (!confirmed) return;
 
-        await authorsApi.delete(this.authorId)
-            .then(async (response) => {
-                if (response.ok) {
-                    window.location.href = '/authors';
-                } else {
-                    await api.showError(response, "Cannot delete author because they have associated books in the system.");
-                }
-            })
-            .catch(() => {
-                modal.error("A network error occurred. Please try again.");
-            });
+        try {
+            const response = await authorsApi.delete(this.authorId);
+            if (response.ok) {
+                await modal.alert("Author deleted successfully!");
+                window.location.href = '/authors';
+            } else {
+                await api.showError(response, "Cannot delete author because they have associated books in the system.");
+            }
+        } catch (error) {
+            // Handled by api.js
+        }
     }
 }
 

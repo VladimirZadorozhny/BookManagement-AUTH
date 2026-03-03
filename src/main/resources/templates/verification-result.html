@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: layout(~{::title}, ~{::section}, 'wide-container')}"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Account Verification Result</title>
+</head>
+<body>
+<section>
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div th:classappend="${isSuccess} ? 'alert-success' : 'alert-danger'" class="alert text-center" role="alert">
+                <h4 class="alert-heading" th:text="${isSuccess} ? 'Success!' : 'Error!'"></h4>
+                <p th:text="${message}"></p>
+                <hr>
+                <p class="mb-0">
+                    <a th:href="@{/login}" class="btn btn-primary">Go to Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

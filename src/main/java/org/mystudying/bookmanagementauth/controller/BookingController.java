@@ -1,25 +1,28 @@
 package org.mystudying.bookmanagementauth.controller;
 
+import jakarta.validation.Valid;
+import org.mystudying.bookmanagementauth.dto.AdminMailRequestDto;
 import org.mystudying.bookmanagementauth.dto.BookingReportDto;
 import org.mystudying.bookmanagementauth.dto.BookingReportType;
+import org.mystudying.bookmanagementauth.services.AdminMailService;
 import org.mystudying.bookmanagementauth.services.BookingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/reports")
 public class BookingController {
 
     private final BookingService bookingService;
+    private final AdminMailService adminMailService;
 
-    public BookingController(BookingService bookingService) {
+    public BookingController(BookingService bookingService, AdminMailService adminMailService) {
         this.bookingService = bookingService;
+        this.adminMailService = adminMailService;
     }
 
     @GetMapping("/bookings")
@@ -32,7 +35,29 @@ public class BookingController {
     ) {
         return bookingService.getBookingReport(type, days, minActiveBooks, pageable);
     }
+
+    @PostMapping("/notify-heavy-users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyHeavyUsers(@Valid @RequestBody AdminMailRequestDto requestDto) {
+        adminMailService.sendBulkMailToHeavyUsers(
+                requestDto.subject(),
+                requestDto.body(),
+                requestDto.minBooksBorrowed() != null ? requestDto.minBooksBorrowed() : 5L
+        );
+        return ResponseEntity.ok("Notifications queued for heavy users.");
+    }
+
+    @PostMapping("/notify-overdue-users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyOverdueUsers(@Valid @RequestBody AdminMailRequestDto requestDto) {
+        adminMailService.sendBulkMailToOverdueUsers(requestDto.subject(), requestDto.body());
+        return ResponseEntity.ok("Notifications queued for users with overdue books.");
+    }
+
+    @PostMapping("/notify-user/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyUser(@PathVariable Long userId, @Valid @RequestBody AdminMailRequestDto requestDto) {
+        adminMailService.sendMailToUser(userId, requestDto.subject(), requestDto.body());
+        return ResponseEntity.ok("Notification queued for user.");
+    }
 }
-
-
-// TODO: Add integration tests for booking reports after Roles/Auth will be implemented

@@ -2,12 +2,14 @@ package org.mystudying.bookmanagementauth.controller;
 
 import org.mystudying.bookmanagementauth.config.UserPrincipal;
 import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.services.VerificationService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Controller for serving Thymeleaf UI templates.
@@ -17,9 +19,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class UiController {
 
     private final UserService userService;
+    private final VerificationService verificationService;
 
-    public UiController(UserService userService) {
+    public UiController(UserService userService, VerificationService verificationService) {
         this.userService = userService;
+        this.verificationService = verificationService;
     }
 
     @GetMapping("/")
@@ -99,5 +103,24 @@ public class UiController {
     @PreAuthorize("hasRole('ADMIN')")
     public String users() {
         return "users";
+    }
+
+    @GetMapping("/reset-password")
+    public String resetPassword(@RequestParam("token") String token, Model model) {
+        model.addAttribute("token", token);
+        return "reset-password";
+    }
+
+    @GetMapping("/verify")
+    public String verifyAccount(@RequestParam("token") String token, Model model) {
+        try {
+            verificationService.verifyToken(token);
+            model.addAttribute("message", "Your account has been successfully verified! You can now log in.");
+            model.addAttribute("isSuccess", true);
+        } catch (Exception e) {
+            model.addAttribute("message", "Account verification failed: " + e.getMessage());
+            model.addAttribute("isSuccess", false);
+        }
+        return "verification-result"; // A new Thymeleaf template to display the result
     }
 }

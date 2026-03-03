@@ -53,11 +53,15 @@ class BooksPage {
     async loadBooks(url, title = 'Book Catalog') {
         try {
             const response = await api.get(url);
-            const books = await response.json();
-            this.pageTitle.textContent = title;
-            this.renderBooks(books);
+            if (response.ok) {
+                const books = await response.json();
+                this.pageTitle.textContent = title;
+                this.renderBooks(books);
+            } else {
+                await api.showError(response, 'Failed to load books');
+            }
         } catch (error) {
-            console.error('Error loading books:', error);
+            // Handled by api.js
         }
     }
 
@@ -137,12 +141,16 @@ class BooksPage {
     async openCreateModal() {
         try {
             const resp = await api.get('/api/genres');
-            const genres = await resp.json();
-            const select = byId('createGenres');
-            select.innerHTML = genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-            this.createModal.show();
+            if (resp.ok) {
+                const genres = await resp.json();
+                const select = byId('createGenres');
+                select.innerHTML = genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+                this.createModal.show();
+            } else {
+                await api.showError(resp, "Failed to load genres list.");
+            }
         } catch (e) {
-            modal.error("Failed to load genres list.");
+            // Handled by api.js
         }
     }
 
@@ -193,17 +201,21 @@ class BooksPage {
                 window.location.href = '/me?view=active_bookings';
             }
         } catch (error) {
-            modal.error("An error occurred during rental.");
+            // Handled by api.js
         }
     }
 
     async loadGroupedView() {
         try {
             const response = await api.get('/api/genres/with-books');
-            const genres = await response.json();
-            this.renderGrouped(genres);
+            if (response.ok) {
+                const genres = await response.json();
+                this.renderGrouped(genres);
+            } else {
+                await api.showError(response, "Failed to load grouped books.");
+            }
         } catch (error) {
-            modal.error("Failed to load grouped books.");
+            // Handled by api.js
         }
     }
 
@@ -256,10 +268,14 @@ class BooksPage {
     async loadGenresList() {
         try {
             const response = await api.get('/api/genres');
-            const genres = await response.json();
-            this.renderGenres(genres);
+            if (response.ok) {
+                const genres = await response.json();
+                this.renderGenres(genres);
+            } else {
+                await api.showError(response, "Failed to load genres.");
+            }
         } catch (error) {
-            modal.error("Failed to load genres.");
+            // Handled by api.js
         }
     }
 

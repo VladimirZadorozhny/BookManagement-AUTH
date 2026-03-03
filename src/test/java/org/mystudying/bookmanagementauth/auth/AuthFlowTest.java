@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,17 +21,18 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
         MockHttpSession session = loginAsUser();
 
         mockMvc.perform(get("/api/auth/me")
-                .session(session))
+                        .session(session))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void logoutInvalidatesSession() throws  Exception {
+    void logoutInvalidatesSession() throws Exception {
         MockHttpSession session = loginAsUser();
 
         mockMvc.perform(post("/api/auth/logout")
-                .session(session))
-                .andExpect(status().isNoContent());
+                        .session(session))
+                .andExpect(status().isFound())
+                .andExpect(MockMvcResultMatchers.redirectedUrl("/"));
 
         mockMvc.perform(get("/api/auth/me")
                         .session(session))

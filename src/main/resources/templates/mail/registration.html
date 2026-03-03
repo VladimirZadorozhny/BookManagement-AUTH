@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Account Registration</title>
+</head>
+<body>
+    <p>Dear <span th:text="${userName}">User</span>,</p>
+
+    <p>Welcome to our Book Management application! Please verify your account by clicking the link below:</p>
+
+    <p>
+        <a th:href="${verificationLink}">Verify Account</a>
+    </p>
+
+    <p>If you did not register for this service, please ignore this email.</p>
+    <p>Thank you!</p>
+</body>
+</html>

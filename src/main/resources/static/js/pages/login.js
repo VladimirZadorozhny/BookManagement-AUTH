@@ -5,6 +5,7 @@ class LoginPage {
     constructor() {
         this.loginForm = byId('loginForm');
         this.errorDiv = byId('loginError');
+        this.submitBtn = this.loginForm?.querySelector('button[type="submit"]');
     }
 
     init() {
@@ -20,26 +21,21 @@ class LoginPage {
 
     async handleLogin() {
         this.errorDiv.classList.add('d-none');
-        const formData = new FormData(this.loginForm);
+        const credentials = serializeForm(this.loginForm);
         
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                body: formData
-            });
+        await withLoading(this.submitBtn, async () => {
+            try {
+                const response = await authApi.login(credentials);
 
-            if (response.ok) {
-                window.location.href = '/';
-            } else {
-                const err = await response.json();
-                this.errorDiv.textContent = err.message || 'Invalid email or password.';
-                this.errorDiv.classList.remove('d-none');
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    await api.showError(response, 'Invalid email or password.');
+                }
+            } catch (error) {
+                // api.request handles network error modals
             }
-        } catch (error) {
-            console.error("Login Network Error:", error);
-            this.errorDiv.textContent = 'A network error occurred. Please try again.';
-            this.errorDiv.classList.remove('d-none');
-        }
+        });
     }
 }
 

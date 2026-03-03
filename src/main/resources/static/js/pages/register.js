@@ -5,6 +5,7 @@ class RegisterPage {
     constructor() {
         this.registerForm = byId('registerForm');
         this.errorDiv = byId('registerError');
+        this.submitBtn = this.registerForm?.querySelector('button[type="submit"]');
     }
 
     init() {
@@ -22,26 +23,20 @@ class RegisterPage {
         this.errorDiv.classList.add('d-none');
         const payload = serializeForm(this.registerForm);
         
-        try {
-            const response = await fetch('/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        await withLoading(this.submitBtn, async () => {
+            try {
+                const response = await authApi.register(payload);
 
-            if (response.ok) {
-                await modal.alert('Registration successful! You can now log in.', 'Success');
-                window.location.href = '/login';
-            } else {
-                const err = await response.json();
-                this.errorDiv.textContent = err.message || 'Registration failed.';
-                this.errorDiv.classList.remove('d-none');
+                if (response.ok) {
+                    await modal.alert('Registration successful! Please check your email for a verification link to activate your account.', 'Verify Your Email');
+                    window.location.href = '/login';
+                } else {
+                    await api.showError(response, 'Registration failed.');
+                }
+            } catch (error) {
+                // Network error handled by api.js
             }
-        } catch (error) {
-            console.error("Register Network Error:", error);
-            this.errorDiv.textContent = 'A network error occurred. Please try again.';
-            this.errorDiv.classList.remove('d-none');
-        }
+        });
     }
 }
 
