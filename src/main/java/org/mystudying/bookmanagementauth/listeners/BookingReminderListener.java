@@ -47,15 +47,7 @@ public class BookingReminderListener {
             backoff = @Backoff(delay = 2000)
     )
     public void handleBookingReminder(BookingReminderEvent event) throws MessagingException {
-        // Log successful send to prevent duplicates
-        try {
-            bookingReminderLogRepository.save(new BookingReminderLog(event.bookingId(), event.reminderType(), OffsetDateTime.now()));
-            log.info("Booking reminder log saved for booking {} of type {}", event.bookingId(), event.reminderType());
-        } catch (DataIntegrityViolationException e) {
-            log.info("Reminder already logged for booking {} of type {}. Skipping sending email.", event.bookingId(), event.reminderType());
-            return; // Skip email if already logged
-        }
-
+        // First, attempt to send the email
         log.info("Attempting to send booking reminder email of type {} to: {}", event.reminderType(), event.email());
         String subject = "";
 
@@ -84,6 +76,14 @@ public class BookingReminderListener {
 
         mailService.send(event.email(), subject, body);
         log.info("Booking reminder email of type {} sent to: {}", event.reminderType(), event.email());
+
+        // Log successful send to prevent duplicates, only AFTER email is successfully sent
+        try {
+            bookingReminderLogRepository.save(new BookingReminderLog(event.bookingId(), event.reminderType(), OffsetDateTime.now()));
+            log.info("Booking reminder log saved for booking {} of type {}", event.bookingId(), event.reminderType());
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Reminder already logged for booking {} of type {}. This should not happen if previous send was successful.", event.bookingId(), event.reminderType());
+        }
     }
 
     @Recover

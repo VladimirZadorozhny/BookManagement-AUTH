@@ -15,6 +15,8 @@ import org.mystudying.bookmanagementauth.repositories.RoleRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
 import org.mystudying.bookmanagementauth.repositories.VerificationTokenRepository;
 import org.mystudying.bookmanagementauth.repositories.PasswordResetTokenRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.mystudying.bookmanagementauth.events.UserRegisteredEvent;
 import org.mystudying.bookmanagementauth.events.PasswordResetRequestedEvent;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 public class UserService {
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final BookingRepository bookingRepository;
@@ -204,9 +207,15 @@ public class UserService {
 
     @Transactional
     public void requestPasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException(email));
+        Optional<User> userOptional = userRepository.findByEmail(email);
 
+        if (userOptional.isEmpty()) {
+            // Log for internal tracking but return success to frontend to prevent user enumeration
+            log.info("Password reset requested for non-existent email: {}", email);
+            return;
+        }
+
+        User user = userOptional.get();
         String token = UUID.randomUUID().toString();
         PasswordResetToken passwordResetToken = new PasswordResetToken(
                 token,
@@ -223,20 +232,32 @@ public class UserService {
         PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
                 .orElseThrow(() -> new InvalidTokenException("Invalid password reset token."));
 
-        if (token.isUsed()) {
-            throw new TokenAlreadyUsedException("Password reset token has already been used.");
-        }
-
         if (token.isExpired()) {
             throw new TokenExpiredException("Password reset token has expired.");
         }
 
+        // Attempt to mark the token as used atomically
+        int updatedRows = passwordResetTokenRepository.markTokenAsUsed(tokenValue, OffsetDateTime.now());
+
+        if (updatedRows == 0) {
+            // This means the token was already used or expired in a race condition
+            // Re-fetch to check exact state, or assume it was already used
+            PasswordResetToken recheckedToken = passwordResetTokenRepository.findByToken(tokenValue)
+                    .orElseThrow(() -> new InvalidTokenException("Token not found during recheck."));
+
+            if (recheckedToken.isUsed()) {
+                throw new TokenAlreadyUsedException("Password reset token has already been used.");
+            } else if (recheckedToken.isExpired()) {
+                throw new TokenExpiredException("Password reset token has expired.");
+            } else {
+                // Fallback for unexpected cases
+                throw new InvalidTokenException("Could not use token, possibly due to a race condition or invalid state.");
+            }
+        }
+
         User user = token.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
-        // userRepository.save(user); // Redundant save, as user is managed
 
-        token.setUsed(true);
-        // passwordResetTokenRepository.save(token); // Redundant save, as token is managed
     }
 
     @Transactional
