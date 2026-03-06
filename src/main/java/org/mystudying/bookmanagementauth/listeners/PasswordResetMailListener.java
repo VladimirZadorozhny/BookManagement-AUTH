@@ -2,6 +2,7 @@ package org.mystudying.bookmanagementauth.listeners;
 
 import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.events.PasswordResetRequestedEvent;
+import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.services.mail.MailTemplateService;
 import org.slf4j.Logger;
@@ -21,13 +22,15 @@ public class PasswordResetMailListener {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetMailListener.class);
     private final MailService mailService;
     private final MailTemplateService mailTemplateService;
+    private final FailedMailService failedMailService;
 
     @Value("${app.baseUrl:http://localhost:8080}")
     private String baseUrl;
 
-    public PasswordResetMailListener(MailService mailService, MailTemplateService mailTemplateService) {
+    public PasswordResetMailListener(MailService mailService, MailTemplateService mailTemplateService, FailedMailService failedMailService) {
         this.mailService = mailService;
         this.mailTemplateService = mailTemplateService;
+        this.failedMailService = failedMailService;
     }
 
     @Async("mailExecutor")
@@ -39,12 +42,8 @@ public class PasswordResetMailListener {
     )
     public void handlePasswordResetRequest(PasswordResetRequestedEvent event) throws MessagingException {
         log.info("Attempting to send password reset email to: {}", event.email());
-        String subject = "Password Reset Request for Book Management";
-
-        String resetLink = String.format("%s/reset-password?token=%s", baseUrl, event.token());
-
-
-        String body = mailTemplateService.buildPasswordResetMail(event.email(), resetLink);
+        String subject = getSubject();
+        String body = buildBody(event);
 
         mailService.send(event.email(), subject, body);
         log.info("Password reset email sent to: {}", event.email());
@@ -53,6 +52,20 @@ public class PasswordResetMailListener {
     @Recover
     public void recover(MessagingException e, PasswordResetRequestedEvent event) {
         log.error("Failed to send password reset email to {} after multiple retries: {}", event.email(), e.getMessage());
-        // TODO: Potentially notify admin or store in a dead-letter queue
+        failedMailService.logFailedMail(
+                event.email(),
+                getSubject(),
+                buildBody(event),
+                e.getMessage()
+        );
+    }
+
+    private String getSubject() {
+        return "Password Reset Request for Book Management";
+    }
+
+    private String buildBody(PasswordResetRequestedEvent event) {
+        String resetLink = String.format("%s/reset-password?token=%s", baseUrl, event.token());
+        return mailTemplateService.buildPasswordResetMail(event.email(), resetLink);
     }
 }

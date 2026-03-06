@@ -5,6 +5,7 @@ import org.mystudying.bookmanagementauth.domain.BookingReminderLog;
 import org.mystudying.bookmanagementauth.events.BookingReminderEvent;
 import org.mystudying.bookmanagementauth.repositories.BookingReminderLogRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
+import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.services.mail.MailTemplateService;
 import org.slf4j.Logger;
@@ -28,12 +29,14 @@ public class BookingReminderListener {
     private final MailTemplateService mailTemplateService;
     private final BookingReminderLogRepository bookingReminderLogRepository;
     private final UserRepository userRepository;
+    private final FailedMailService failedMailService;
 
-    public BookingReminderListener(MailService mailService, MailTemplateService mailTemplateService, BookingReminderLogRepository bookingReminderLogRepository, UserRepository userRepository) {
+    public BookingReminderListener(MailService mailService, MailTemplateService mailTemplateService, BookingReminderLogRepository bookingReminderLogRepository, UserRepository userRepository, FailedMailService failedMailService) {
         this.mailService = mailService;
         this.mailTemplateService = mailTemplateService;
         this.bookingReminderLogRepository = bookingReminderLogRepository;
         this.userRepository = userRepository;
+        this.failedMailService = failedMailService;
     }
 
     @Async("mailExecutor")
@@ -47,26 +50,8 @@ public class BookingReminderListener {
     public void handleBookingReminder(BookingReminderEvent event) throws MessagingException {
         // First, attempt to send the email
         log.info("Attempting to send booking reminder email of type {} to: {}", event.reminderType(), event.email());
-        String subject = "";
-
-
-        switch (event.reminderType()) {
-            case THREE_DAYS_LEFT:
-                subject = "Reminder: Your book '" + event.bookTitle() + "' is due soon!";
-                break;
-            case DUE_TODAY:
-                subject = "Reminder: Your book '" + event.bookTitle() + "' is due today!";
-                break;
-            case OVERDUE:
-                subject = "Action Required: Your book '" + event.bookTitle() + "' is overdue!";
-                break;
-            default:
-                log.warn("Unknown reminder type: {}", event.reminderType());
-                return;
-        }
-
-        // Use MailTemplateService to build the body
-        String body = mailTemplateService.buildReminderMail(event.userName(), event.bookTitle(), event.dueDate(), event.reminderType());
+        String subject = getSubject(event);
+        String body = buildBody(event);
 
         mailService.send(event.email(), subject, body);
         log.info("Booking reminder email of type {} sent to: {}", event.reminderType(), event.email());
@@ -84,6 +69,28 @@ public class BookingReminderListener {
     public void recover(MessagingException e, BookingReminderEvent event) {
         log.error("Failed to send booking reminder email of type {} to {} after multiple retries: {}",
                 event.reminderType(), event.email(), e.getMessage());
-        // TODO: Potentially notify admin or store in a dead-letter queue
+        failedMailService.logFailedMail(
+                event.email(),
+                getSubject(event),
+                buildBody(event),
+                e.getMessage()
+        );
+    }
+
+    private String getSubject(BookingReminderEvent event) {
+        switch (event.reminderType()) {
+            case THREE_DAYS_LEFT:
+                return "Reminder: Your book '" + event.bookTitle() + "' is due soon!";
+            case DUE_TODAY:
+                return "Reminder: Your book '" + event.bookTitle() + "' is due today!";
+            case OVERDUE:
+                return "Action Required: Your book '" + event.bookTitle() + "' is overdue!";
+            default:
+                return "Library Notification";
+        }
+    }
+
+    private String buildBody(BookingReminderEvent event) {
+        return mailTemplateService.buildReminderMail(event.userName(), event.bookTitle(), event.dueDate(), event.reminderType());
     }
 }

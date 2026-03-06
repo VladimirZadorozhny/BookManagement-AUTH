@@ -2,6 +2,7 @@ package org.mystudying.bookmanagementauth.listeners;
 
 import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.events.UserRegisteredEvent;
+import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.services.mail.MailTemplateService;
 import org.slf4j.Logger;
@@ -21,13 +22,15 @@ public class UserMailListener {
     private static final Logger log = LoggerFactory.getLogger(UserMailListener.class);
     private final MailService mailService;
     private final MailTemplateService mailTemplateService;
+    private final FailedMailService failedMailService;
 
     @Value("${app.baseUrl:http://localhost:8080}")
     private String baseUrl;
 
-    public UserMailListener(MailService mailService, MailTemplateService mailTemplateService) {
+    public UserMailListener(MailService mailService, MailTemplateService mailTemplateService, FailedMailService failedMailService) {
         this.mailService = mailService;
         this.mailTemplateService = mailTemplateService;
+        this.failedMailService = failedMailService;
     }
 
     @Async("mailExecutor")
@@ -39,12 +42,8 @@ public class UserMailListener {
     )
     public void handleUserRegistered(UserRegisteredEvent event) throws MessagingException {
         log.info("Attempting to send registration email to: {}", event.email());
-        String subject = "Welcome to Book Management - Please Verify Your Account";
-
-        String verificationLink = String.format("%s/verify?token=%s", baseUrl, event.token());
-
-        // Use MailTemplateService to build the body
-        String body = mailTemplateService.buildRegistrationMail(event.name(), verificationLink);
+        String subject = getSubject();
+        String body = buildBody(event);
 
         mailService.send(event.email(), subject, body);
         log.info("Registration email sent to: {}", event.email());
@@ -53,6 +52,20 @@ public class UserMailListener {
     @Recover
     public void recover(MessagingException e, UserRegisteredEvent event) {
         log.error("Failed to send registration email to {} after multiple retries: {}", event.email(), e.getMessage());
-        // TODO: Potentially notify admin or store in a dead-letter queue
+        failedMailService.logFailedMail(
+                event.email(),
+                getSubject(),
+                buildBody(event),
+                e.getMessage()
+        );
+    }
+
+    private String getSubject() {
+        return "Welcome to Book Management - Please Verify Your Account";
+    }
+
+    private String buildBody(UserRegisteredEvent event) {
+        String verificationLink = String.format("%s/verify?token=%s", baseUrl, event.token());
+        return mailTemplateService.buildRegistrationMail(event.name(), verificationLink);
     }
 }

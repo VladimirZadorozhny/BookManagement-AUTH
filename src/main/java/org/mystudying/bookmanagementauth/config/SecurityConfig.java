@@ -88,6 +88,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
                         .requestMatchers("/api/users/search").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/failed-mails/**").hasRole("ADMIN")
 
                         // 6. EVERYTHING ELSE (Authenticated)
                         // Ownership checks (e.g. /api/users/{id}/**) are enforced via @PreAuthorize in UserController
