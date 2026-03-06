@@ -33,6 +33,7 @@ public class BookingReminderService {
 
         eventPublisher.publishEvent(new BookingReminderEvent(
                 booking.getId(),
+                booking.getUser().getName(),
                 booking.getUser().getEmail(),
                 booking.getBook().getTitle(),
                 booking.getDueAt().atStartOfDay().atOffset(ZoneOffset.UTC),

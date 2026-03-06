@@ -37,7 +37,7 @@ public class VerificationService {
 
         if (updatedRows == 0) {
             // This means the token was already used or expired in a race condition
-            // Re-fetch to check exact state, or assume it was already used
+            // Re-fetch to check exact state
             VerificationToken recheckedToken = verificationTokenRepository.findByToken(tokenValue)
                     .orElseThrow(() -> new InvalidTokenException("Token not found during recheck."));
 

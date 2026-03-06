@@ -4,12 +4,23 @@
 class Api {
     async request(url, options = {}) {
         try {
+            const method = options.method || "GET";
+            const headers = {
+                "Content-Type": "application/json",
+                ...options.headers
+            };
+
+            // Automatically include CSRF token for non-GET requests
+            if (method !== "GET") {
+                const csrfToken = this.getCookie("XSRF-TOKEN");
+                if (csrfToken) {
+                    headers["X-XSRF-TOKEN"] = csrfToken;
+                }
+            }
+
             const response = await fetch(url, {
-                headers: {
-                    "Content-Type": "application/json",
-                    ...options.headers
-                },
-                ...options
+                ...options,
+                headers: headers
             });
 
             return response;
@@ -68,6 +79,16 @@ class Api {
         } else {
             alert(message);
         }
+    }
+
+    /**
+     * Simple cookie reader helper.
+     */
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
     }
 }
 

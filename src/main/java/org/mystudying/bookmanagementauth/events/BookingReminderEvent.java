@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 
 public record BookingReminderEvent(
         Long bookingId,
+        String userName,
         String email,
         String bookTitle,
         OffsetDateTime dueDate,

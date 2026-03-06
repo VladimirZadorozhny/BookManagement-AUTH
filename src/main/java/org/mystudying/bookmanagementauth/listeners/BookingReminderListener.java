@@ -2,7 +2,6 @@ package org.mystudying.bookmanagementauth.listeners;
 
 import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.domain.BookingReminderLog;
-import org.mystudying.bookmanagementauth.domain.User;
 import org.mystudying.bookmanagementauth.events.BookingReminderEvent;
 import org.mystudying.bookmanagementauth.repositories.BookingReminderLogRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
@@ -20,7 +19,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Optional;
 
 @Component
 public class BookingReminderListener {
@@ -51,10 +49,6 @@ public class BookingReminderListener {
         log.info("Attempting to send booking reminder email of type {} to: {}", event.reminderType(), event.email());
         String subject = "";
 
-        // Fetch user name for personalized email
-        Optional<User> userOptional = userRepository.findByEmail(event.email());
-        String userName = userOptional.map(User::getName).orElse("User");
-
 
         switch (event.reminderType()) {
             case THREE_DAYS_LEFT:
@@ -72,7 +66,7 @@ public class BookingReminderListener {
         }
 
         // Use MailTemplateService to build the body
-        String body = mailTemplateService.buildReminderMail(userName, event.bookTitle(), event.dueDate(), event.reminderType());
+        String body = mailTemplateService.buildReminderMail(event.userName(), event.bookTitle(), event.dueDate(), event.reminderType());
 
         mailService.send(event.email(), subject, body);
         log.info("Booking reminder email of type {} sent to: {}", event.reminderType(), event.email());
