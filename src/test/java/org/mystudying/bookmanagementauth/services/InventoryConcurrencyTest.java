@@ -2,9 +2,14 @@ package org.mystudying.bookmanagementauth.services;
 
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.domain.Book;
+import org.mystudying.bookmanagementauth.exceptions.BookNotAvailableException;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.InsufficientAvailableStockException;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelper;
+import org.mystudying.bookmanagementauth.support.db.TestDataCleanup;
+import org.mystudying.bookmanagementauth.support.db.TestDataHelper;
+import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -21,93 +26,73 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
-@Import(InventoryService.class)
+@Import({InventoryService.class, TestDataHelper.class, TestDataCleanup.class, ConcurrentTestHelper.class})
 @Sql({"/insertTestRecords.sql"})
 public class InventoryConcurrencyTest {
-
-    private static final String USERS_TABLE = "users";
-    private static final String BOOKS_TABLE = "books";
-    private static final String BOOKINGS_TABLE = "bookings";
-    private static final String AUTHORS_TABLE = "authors";
 
     private final JdbcClient jdbcClient;
     private final InventoryService inventoryService;
     private final TransactionTemplate txTemplate;
     private final BookRepository bookRepository;
+    private final TestDataHelper testDataHelper;
+    private final TestDataCleanup testDataCleanup;
+    private final ConcurrentTestHelper concurrentTestHelper;
 
-    public InventoryConcurrencyTest(JdbcClient jdbcClient, InventoryService inventoryService, TransactionTemplate txTemplate, BookRepository bookRepository) {
+    public InventoryConcurrencyTest(JdbcClient jdbcClient,
+                                    InventoryService inventoryService,
+                                    TransactionTemplate txTemplate,
+                                    BookRepository bookRepository,
+                                    TestDataHelper testDataHelper,
+                                    TestDataCleanup testDataCleanup, ConcurrentTestHelper concurrentTestHelper) {
         this.jdbcClient = jdbcClient;
         this.inventoryService = inventoryService;
         this.txTemplate = txTemplate;
         this.bookRepository = bookRepository;
-    }
-
-    private long idOfRentableBook() {
-        return jdbcClient.sql("SELECT id FROM books WHERE title = 'Rentable Book'")
-                .query(Long.class)
-                .single();
-    }
-
-    private void cleanupAllTestData() {
-        // Order: bookings -> book_genres -> users_roles -> books -> authors -> users -> genres
-
-        // Delete all records from the test SQL scripts
-        // Clear bookings first
-        jdbcClient.sql("DELETE FROM " + BOOKINGS_TABLE + " WHERE user_id IN (SELECT id FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com'))").update();
-
-        // Clear book_genres
-        jdbcClient.sql("DELETE FROM book_genres WHERE book_id IN (SELECT id FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2'))").update();
-
-        // Clear users_roles
-        jdbcClient.sql("DELETE FROM users_roles WHERE user_id IN (SELECT id FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com'))").update();
-
-        // Clear books
-        jdbcClient.sql("DELETE FROM " + BOOKS_TABLE + " WHERE title IN ('Book For Deletion', 'Rentable Book', 'Test Book 1', 'Test Book 2')").update();
-
-        // Clear authors, users, genres
-        jdbcClient.sql("DELETE FROM " + AUTHORS_TABLE + " WHERE name IN ('Author For Deletion', 'Test Author 1', 'Test Author 2')").update();
-        jdbcClient.sql("DELETE FROM " + USERS_TABLE + " WHERE email IN ('delete@example.com', 'rent@example.com', 'test1@example.com', 'test2@example.com')").update();
-        jdbcClient.sql("DELETE FROM genres WHERE name IN ('Test Genre 1', 'Test Genre 2', 'Test Genre 3')").update();
+        this.testDataHelper = testDataHelper;
+        this.testDataCleanup = testDataCleanup;
+        this.concurrentTestHelper = concurrentTestHelper;
     }
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void concurrentReturnsShouldIncreaseStockCorrectly() throws Exception {
-        long bookId = idOfRentableBook();
+        long bookId = testDataHelper.idOfBook(TestFixtures.BOOK_RENTABLE_TITLE);
         try {
             txTemplate.execute(status -> {
                 jdbcClient.sql("UPDATE books SET available = 0 WHERE id = ?").param(bookId).update();
                 return null;
             });
 
-            int threadCount = 10;
-            ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-            CountDownLatch latch = new CountDownLatch(threadCount);
+            int initialAvailable = jdbcClient.sql("SELECT available FROM books WHERE id = ?").param(bookId).query(Integer.class).single();
 
+            int threadCount = 10;
+
+            List<Callable<Boolean>> tasks = new ArrayList<>();
             for (int i = 0; i < threadCount; i++) {
-                executor.submit(() -> {
+                tasks.add(() -> {
                     try {
                         inventoryService.incrementStock(bookId);
-                    } finally {
-                        latch.countDown();
+                        return true;
+                    } catch (BookNotAvailableException e) {
+                        return false;
                     }
                 });
             }
 
-            latch.await();
-            executor.shutdown();
+            List<Boolean> results = concurrentTestHelper.runParallel(tasks, tasks.size());
+            long incrementSuccessCount = results.stream().filter(r -> r).count();
 
             Book book = bookRepository.findById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
-            assertThat(book.getAvailable()).isEqualTo(threadCount);
+            assertThat(book.getAvailable()).isEqualTo(initialAvailable + incrementSuccessCount);
         } finally {
-            cleanupAllTestData();
+            testDataCleanup.cleanupAllTestSqlData();
         }
     }
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void writeOffFailsIfNotEnoughStock() {
-        long bookId = idOfRentableBook();
+        long bookId = testDataHelper.idOfBook(TestFixtures.BOOK_RENTABLE_TITLE);
         try {
             txTemplate.execute(status -> {
                 jdbcClient.sql("UPDATE books SET available = 2 WHERE id = ?").param(bookId).update();
@@ -121,14 +106,14 @@ public class InventoryConcurrencyTest {
             Book book = bookRepository.findById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
             assertThat(book.getAvailable()).isEqualTo(2);
         } finally {
-            cleanupAllTestData();
+            testDataCleanup.cleanupAllTestSqlData();
         }
     }
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void concurrentWriteOffsShouldBeSafe() throws Exception {
-        long bookId = idOfRentableBook();
+        long bookId = testDataHelper.idOfBook(TestFixtures.BOOK_RENTABLE_TITLE);
         try {
             txTemplate.execute(status -> {
                 jdbcClient.sql("UPDATE books SET available = 10 WHERE id = ?").param(bookId).update();
@@ -137,31 +122,29 @@ public class InventoryConcurrencyTest {
 
             int attempts = 5;
             int writeOffAmount = 3; // Total 15 requested, only 10 available
-            ExecutorService executor = Executors.newFixedThreadPool(attempts);
-            List<Future<Boolean>> results = new ArrayList<>();
+            int initialAvailable = jdbcClient.sql("SELECT available FROM books WHERE id = ?").param(bookId).query(Integer.class).single();
 
+
+            List<Callable<Boolean>> tasks = new ArrayList<>();
             for (int i = 0; i < attempts; i++) {
-                results.add(executor.submit(() -> {
+                tasks.add(() -> {
                     try {
                         inventoryService.writeOff(bookId, writeOffAmount);
                         return true;
                     } catch (InsufficientAvailableStockException e) {
                         return false;
                     }
-                }));
+                });
             }
 
-            long successCount = 0;
-            for (Future<Boolean> result : results) {
-                if (result.get()) successCount++;
-            }
-            executor.shutdown();
+            List<Boolean> results = concurrentTestHelper.runParallel(tasks, tasks.size());
+            long writeOffSuccessCount = results.stream().filter(r -> r).count();
 
-            assertThat(successCount).isEqualTo(3); // 3 * 3 = 9. 4th would be 12 > 10.
+            assertThat(writeOffSuccessCount).isEqualTo(initialAvailable / writeOffAmount); // 3 * 3 = 9. 4th would be 12 > 10.
             Book book = bookRepository.findById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
-            assertThat(book.getAvailable()).isEqualTo(1); // 10 - 9 = 1
+            assertThat(book.getAvailable()).isEqualTo(initialAvailable - writeOffSuccessCount * writeOffAmount); // 10 - 9 = 1
         } finally {
-            cleanupAllTestData();
+            testDataCleanup.cleanupAllTestSqlData();
         }
     }
 

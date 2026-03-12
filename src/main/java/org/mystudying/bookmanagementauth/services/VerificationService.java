@@ -46,10 +46,11 @@ public class VerificationService {
             } else if (recheckedToken.isExpired()) {
                 throw new TokenExpiredException("Verification token has expired.");
             } else {
-                // Fallback for unexpected cases
-                throw new InvalidTokenException("Could not use token, possibly due to a race condition or invalid state.");
+                // Fallback for unexpected cases (should be extremely rare with atomic check)
+                throw new TokenAlreadyUsedException("Verification token could not be used, likely already processed.");
             }
         }
+
         User user = token.getUser();
         user.setActive(true); // Enable the user account
     }

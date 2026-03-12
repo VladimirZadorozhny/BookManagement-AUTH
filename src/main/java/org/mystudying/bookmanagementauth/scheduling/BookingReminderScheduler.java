@@ -32,18 +32,30 @@ public class BookingReminderScheduler {
 
         // Reminders for books due in 3 days
         OffsetDateTime threeDaysLater = now.plusDays(3).withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
-        List<Long> dueSoonIds = bookingRepository.findBookingIdsDueInDays(startOfDay, threeDaysLater);
-        dueSoonIds.forEach(id -> reminderService.processReminder(id, ReminderType.THREE_DAYS_LEFT));
+        try {
+            List<Long> dueSoonIds = bookingRepository.findBookingIdsDueInDays(startOfDay, threeDaysLater);
+            dueSoonIds.forEach(id -> reminderService.processReminder(id, ReminderType.THREE_DAYS_LEFT));
+        } catch (Exception e) {
+            log.error("Failed to process due-soon reminders", e);
+        }
 
         // Reminders for books due today
-        List<Long> dueTodayIds = bookingRepository.findBookingIdsDueToday(startOfDay, endOfDay);
-        dueTodayIds.forEach(id -> reminderService.processReminder(id, ReminderType.DUE_TODAY));
+        try {
+            List<Long> dueTodayIds = bookingRepository.findBookingIdsDueToday(startOfDay, endOfDay);
+            dueTodayIds.forEach(id -> reminderService.processReminder(id, ReminderType.DUE_TODAY));
+        } catch (Exception e) {
+            log.error("Failed to process due-today reminders", e);
+        }
 
         // Reminders for books 1 day overdue
         OffsetDateTime oneDayAgoStart = now.minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         OffsetDateTime oneDayAgoEnd = now.minusDays(1).withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
-        List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgoStart, oneDayAgoEnd);
-        overdueIds.forEach(id -> reminderService.processReminder(id, ReminderType.OVERDUE));
+        try {
+            List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgoStart, oneDayAgoEnd);
+            overdueIds.forEach(id -> reminderService.processReminder(id, ReminderType.OVERDUE));
+        } catch (Exception e) {
+            log.error("Failed to process overdue reminders", e);
+        }
 
         log.info("Finished scheduled booking reminder job.");
     }

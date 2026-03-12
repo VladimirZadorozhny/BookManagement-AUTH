@@ -27,7 +27,7 @@ public class FailedMailLog {
     @Column(nullable = false)
     private OffsetDateTime createdAt;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private OffsetDateTime lastAttemptAt;
 
     @Column(nullable = false)

@@ -2,10 +2,12 @@ package org.mystudying.bookmanagementauth.auth;
 
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
+import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +32,7 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
         MockHttpSession session = loginAsUser();
 
         mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf())
                         .session(session))
                 .andExpect(status().isFound())
                 .andExpect(MockMvcResultMatchers.redirectedUrl("/"));
@@ -42,7 +45,7 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
 
     @Test
     void userCanAccessOwnData() throws Exception {
-        long id = idOfUser("test1@example.com");
+        long id = testDataHelper.idOfUser(TestFixtures.USER_1_EMAIL);
         MockHttpSession session = loginAsUser();
 
         mockMvc.perform(get("/api/users/{id}", id)
@@ -52,7 +55,7 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
 
     @Test
     void userCannotAccessOtherUserData() throws Exception {
-        long otherId = idOfUser("test2@example.com");
+        long otherId = testDataHelper.idOfUser(TestFixtures.USER_2_EMAIL);
         MockHttpSession session = loginAsUser();   // Login as user with "test1@example.com"
 
         mockMvc.perform(get("/api/users/{id}", otherId)
@@ -62,20 +65,22 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
 
     @Test
     void adminCanDeleteUser() throws Exception {
-        long userId = idOfUser("delete@example.com");
+        long userId = testDataHelper.idOfUser(TestFixtures.USER_DELETE_EMAIL);
         MockHttpSession session = loginAsAdmin();
 
         mockMvc.perform(delete("/api/users/{id}", userId)
+                        .with(csrf())
                         .session(session))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void normalUserCannotDeleteUser() throws Exception {
-        long userId = idOfUser("delete@example.com");
+        long userId = testDataHelper.idOfUser(TestFixtures.USER_DELETE_EMAIL);
         MockHttpSession session = loginAsUser();
 
         mockMvc.perform(delete("/api/users/{id}", userId)
+                        .with(csrf())
                         .session(session))
                 .andExpect(status().isForbidden());
     }

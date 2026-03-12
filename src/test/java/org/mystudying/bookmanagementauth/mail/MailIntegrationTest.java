@@ -1,128 +1,150 @@
 package org.mystudying.bookmanagementauth.mail;
 
+import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetupTest;
-import jakarta.mail.BodyPart;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
-import org.mystudying.bookmanagementauth.repositories.UserRepository;
-import org.mystudying.bookmanagementauth.repositories.VerificationTokenRepository;
-import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.dto.UserDto;
+import org.mystudying.bookmanagementauth.services.AdminMailService;
+import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
-@ActiveProfiles("test")
-public class MailIntegrationTest {
+/**
+ * Integration tests for various mail templates and event wiring.
+ * Note: These tests use Propagation.NOT_SUPPORTED to allow transactions to commit
+ * and trigger @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT).
+ */
+public class MailIntegrationTest extends AbstractSecurityIntegrationTest {
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
-    private final UserService userService;
-    private final UserRepository userRepository;
-    private final VerificationTokenRepository verificationTokenRepository;
-    private final TransactionTemplate transactionTemplate;
-    private final String baseUrl;
+    @Autowired
+    private AdminMailService adminMailService;
+
+    @Value("${app.baseUrl:http://localhost:8080}")
+    private String baseUrl;
 
     private GreenMail greenMail;
 
-    public MailIntegrationTest(UserService userService, UserRepository userRepository, VerificationTokenRepository verificationTokenRepository, TransactionTemplate transactionTemplate, @Value("${app.baseUrl:http://localhost:8080}") String baseUrl) {
-        this.userService = userService;
-        this.userRepository = userRepository;
-        this.verificationTokenRepository = verificationTokenRepository;
-        this.transactionTemplate = transactionTemplate;
-        this.baseUrl = baseUrl;
-    }
-
     @BeforeEach
-    void setup() {
+    void setup() throws FolderException {
         greenMail = new GreenMail(ServerSetupTest.SMTP);
         greenMail.start();
+        greenMail.purgeEmailFromAllMailboxes();
     }
 
     @AfterEach
     void tearDown() {
         greenMail.stop();
-        // Surgical cleanup because we are not using @Transactional at class level
-        userRepository.findByEmail("mailuser@example.com").ifPresent(user -> {
-            transactionTemplate.execute(status -> {
-                verificationTokenRepository.deleteByUser(user);
-                userRepository.delete(user);
-                return null;
-            });
-        });
-    }
-
-    private String extractContent(MimeMessage message) throws Exception {
-        Object content = message.getContent();
-
-        if (content instanceof String str) {
-            return str;
-        }
-
-        if (content instanceof MimeMultipart multipart) {
-            return extractFromMimeMultipart(multipart);
-        }
-
-        return "";
-    }
-
-    private String extractFromMimeMultipart(MimeMultipart multipart) throws Exception {
-        for (int i = 0; i < multipart.getCount(); i++) {
-            BodyPart part = multipart.getBodyPart(i);
-
-            if (part.isMimeType("text/plain") || part.isMimeType("text/html")) {
-                return part.getContent().toString();
-            }
-
-            if (part.getContent() instanceof MimeMultipart nestedMultipart) {
-                return extractFromMimeMultipart(nestedMultipart);
-            }
-        }
-        return "";
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void shouldSendVerificationEmailOnRegistration() throws Exception {
-        RegisterRequestDto request = new RegisterRequestDto(
-                "Mail User",
-                "mailuser@example.com",
-                "password123"
-        );
+        String email = "mail.test" + UUID.randomUUID() + "@example.com";
+        RegisterRequestDto request = new RegisterRequestDto("Mail User", email, "password123");
 
-        // We MUST run this in a transaction that COMMITS to trigger @TransactionalEventListener (AFTER_COMMIT)
+        // Transaction must commit to trigger listener
         transactionTemplate.execute(status -> {
-            userService.register(request);
+            authLifecycleService.register(request);
             return null;
         });
 
-        // Wait for async mail delivery
-        assertTrue(greenMail.waitForIncomingEmail(5000, 1), "Email should be received within 10 seconds");
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            MimeMessage message = mailTestUtils.verifyEmailReceived(greenMail, email, "Welcome to Book Management - Please Verify Your Account");
+            String body = mailTestUtils.getTextFromMessage(message);
+            assertTrue(body.contains(baseUrl + "/verify?token="));
 
-        MimeMessage[] messages = greenMail.getReceivedMessages();
-        assertEquals(1, messages.length);
-        assertEquals("Welcome to Book Management - Please Verify Your Account", messages[0].getSubject());
-        assertEquals("mailuser@example.com", messages[0].getAllRecipients()[0].toString());
-// ----------------------------------------------------------
-        Object content = messages[0].getContent();
-        System.out.println("Content class: " + content.getClass());
+        });
 
-        if (content instanceof MimeMultipart multipart) {
-            for (int i = 0; i < multipart.getCount(); i++) {
-                BodyPart part = multipart.getBodyPart(i);
-                System.out.println("Part " + i + " content type: " + part.getContentType());
-                System.out.println("Part " + i + " class: " + part.getContent().getClass());
-            }
-        }
-// ----------------------------------------------------------
-        String body = extractContent(messages[0]);
-        assertTrue(body.contains(baseUrl + "/verify?token="));
+        testDataCleanup.deleteUserCascade(email);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldSendPasswordResetEmail() throws Exception {
+        // GIVEN: A verified user exists
+        String email = "mail.test" + UUID.randomUUID() + "@example.com";
+        transactionTemplate.execute(status -> {
+            signupAndVerify("Mail User", email, "password123");
+            return null;
+        });
+
+        // WHEN: Requesting password reset
+        transactionTemplate.execute(status -> {
+            authLifecycleService.requestPasswordReset(email);
+            return null;
+        });
+
+        // THEN: Email received
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            MimeMessage message = mailTestUtils.verifyEmailReceived(greenMail, email, "Password Reset Request for Book Management");
+            String body = mailTestUtils.getTextFromMessage(message);
+            assertTrue(body.contains(baseUrl + "/reset-password?token="));
+
+        });
+        testDataCleanup.deleteUserCascade(email);
+
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldSendLoginAlertEmail() throws Exception {
+        // GIVEN: A verified user
+        String email = "mail.test" + UUID.randomUUID() + "@example.com";
+        transactionTemplate.execute(status -> {
+            signupAndVerify("Mail User", email, "password123");
+            return null;
+        });
+
+        // WHEN: Logging in (Success handler triggers the event)
+        loginAs(email, "password123");
+
+        // THEN: Login alert email received
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            mailTestUtils.verifyEmailReceived(greenMail, email, "Security Alert: New Login to Your Account");
+
+        });
+        testDataCleanup.deleteUserCascade(email);
+
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldSendAdminCustomEmail() throws Exception {
+        // GIVEN: A target user
+        String email = "mail.test" + UUID.randomUUID() + "@example.com";
+        UserDto user = transactionTemplate.execute(status -> signupAndVerify("Mail User", email, "password123"));
+
+        // WHEN: Admin sends a custom mail
+        transactionTemplate.execute(status -> {
+            adminMailService.sendMailToUser(user.id(), "Admin Subject", "Admin Message Body");
+            return null;
+        });
+
+        // THEN: Email received
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            MimeMessage message = mailTestUtils.verifyEmailReceived(greenMail, email, "Admin Subject");
+            String body = mailTestUtils.getTextFromMessage(message);
+            assertTrue(body.contains("Admin Message Body"));
+
+        });
+        testDataCleanup.deleteUserCascade(email);
+
     }
 }

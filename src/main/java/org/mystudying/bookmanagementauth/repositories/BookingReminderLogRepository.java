@@ -6,4 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BookingReminderLogRepository extends JpaRepository<BookingReminderLog, Long> {
     boolean existsByBookingIdAndReminderType(Long bookingId, ReminderType reminderType);
+
+    int countByBookingIdAndReminderType(long bookingId, ReminderType reminderType);
+
 }

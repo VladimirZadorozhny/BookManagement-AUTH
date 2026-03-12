@@ -2,9 +2,9 @@ package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
+import org.mystudying.bookmanagementauth.services.UserBookingService;
 import org.mystudying.bookmanagementauth.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -20,9 +19,11 @@ import java.util.stream.Collectors;
 public class UserController {
 
     private final UserService userService;
+    private final UserBookingService bookingService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserBookingService bookingService) {
         this.userService = userService;
+        this.bookingService = bookingService;
     }
 
     @GetMapping
@@ -46,20 +47,6 @@ public class UserController {
             user = userService.findByEmail(by);
         }
         return user.orElseThrow(() -> new UserNotFoundException(by));
-    }
-
-    /**
-     * @deprecated Since introduction of Booking entity.
-     * Use BookingRepository instead.
-     * Kept temporarily to avoid breaking existing tests.
-     */
-    @Deprecated
-    @GetMapping("/{id}/books")
-    @PreAuthorize("hasRole('ADMIN') or #id == principal.id")
-    public List<BookDto> getBooksByUser(@PathVariable long id) {
-        return userService.findActiveBorrowedBooksByUserId(id).stream()
-                .map(this::toBookDto)
-                .collect(Collectors.toList());
     }
 
     @PostMapping
@@ -86,30 +73,26 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or #userId == principal.id")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void rentBook(@PathVariable long userId, @Valid @RequestBody BookActionRequestDto requestDto) {
-        userService.rentBook(userId, requestDto.bookId());
+        bookingService.rentBook(userId, requestDto.bookId());
     }
 
     @PostMapping("/{userId}/return")
     @PreAuthorize("hasRole('ADMIN') or #userId == principal.id")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void returnBook(@PathVariable long userId, @Valid @RequestBody BookActionRequestDto requestDto) {
-        userService.returnBook(userId, requestDto.bookId());
+        bookingService.returnBook(userId, requestDto.bookId());
     }
 
     @GetMapping("/{id}/bookings")
     @PreAuthorize("hasRole('ADMIN') or #id == principal.id")
     public List<BookingResponseDto> getUserBookings(@PathVariable long id) {
-        return userService.findBookingsByUserId(id);
+        return bookingService.findBookingsByUserId(id);
     }
 
     @PostMapping("/{userId}/bookings/{bookingId}/pay")
     @PreAuthorize("hasRole('ADMIN') or #userId == principal.id")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void payFine(@PathVariable long userId, @PathVariable long bookingId) {
-        userService.payFine(userId, bookingId);
-    }
-
-    private BookDto toBookDto(Book book) {
-        return new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable());
+        bookingService.payFine(userId, bookingId);
     }
 }

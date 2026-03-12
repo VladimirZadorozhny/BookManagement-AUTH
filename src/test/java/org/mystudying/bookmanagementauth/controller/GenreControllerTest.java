@@ -1,51 +1,29 @@
 package org.mystudying.bookmanagementauth.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
+import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.jdbc.JdbcTestUtils;
-import com.jayway.jsonpath.JsonPath;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
 @Sql("/insertTestRecords.sql")
-public class GenreControllerTest {
+public class GenreControllerTest extends AbstractSecurityIntegrationTest {
 
     private static final String GENRES_TABLE = "genres";
     private static final String BOOK_GENRES_TABLE = "book_genres";
-
-    private final MockMvc mockMvc;
-    private final JdbcClient jdbcClient;
-    private final ObjectMapper objectMapper;
-
-    public GenreControllerTest(MockMvc mockMvc, JdbcClient jdbcClient, ObjectMapper objectMapper) {
-        this.mockMvc = mockMvc;
-        this.jdbcClient = jdbcClient;
-        this.objectMapper = objectMapper;
-    }
-
-    private long idOfTestGenre1() {
-        return jdbcClient.sql("select id from genres where name = 'Test Genre 1'")
-                .query(Long.class)
-                .single();
-    }
 
     @Test
     void getAllGenresReturnsAllGenresSorted() throws Exception {
@@ -63,11 +41,11 @@ public class GenreControllerTest {
 
     @Test
     void getGenreByIdReturnsCorrectGenre() throws Exception {
-        long id = idOfTestGenre1();
+        long id = testDataHelper.idOfGenre(TestFixtures.GENRE_1_NAME);
         mockMvc.perform(get("/api/genres/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
-                .andExpect(jsonPath("$.name").value("Test Genre 1"));
+                .andExpect(jsonPath("$.name").value(TestFixtures.GENRE_1_NAME));
     }
 
     @Test
@@ -78,7 +56,7 @@ public class GenreControllerTest {
 
     @Test
     void getBooksByGenreIdReturnsCorrectBooks() throws Exception {
-        long id = idOfTestGenre1();
+        long id = testDataHelper.idOfGenre(TestFixtures.GENRE_1_NAME);
         int amountBooksOfGenre = JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOK_GENRES_TABLE, "genre_id = " + id);
         mockMvc.perform(get("/api/genres/{id}/books", id))
                 .andExpect(status().isOk())
@@ -87,9 +65,9 @@ public class GenreControllerTest {
 
     @Test
     void getBooksByGenreNameReturnsCorrectBooks() throws Exception {
-        long id = idOfTestGenre1();
+        long id = testDataHelper.idOfGenre(TestFixtures.GENRE_1_NAME);
         int amountBooksOfGenre = JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOK_GENRES_TABLE, "genre_id = " + id);
-        mockMvc.perform(get("/api/genres/name/{name}/books", "Test Genre 1"))
+        mockMvc.perform(get("/api/genres/name/{name}/books", TestFixtures.GENRE_1_NAME))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(amountBooksOfGenre));
     }
@@ -108,6 +86,7 @@ public class GenreControllerTest {
     void createGenreReturnsCreated() throws Exception {
         CreateGenreRequestDto request = new CreateGenreRequestDto("New Genre");
         mockMvc.perform(post("/api/genres")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -117,9 +96,10 @@ public class GenreControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void updateGenreReturnsOk() throws Exception {
-        long id = idOfTestGenre1();
+        long id = testDataHelper.idOfGenre(TestFixtures.GENRE_1_NAME);
         CreateGenreRequestDto request = new CreateGenreRequestDto("Updated Genre");
         mockMvc.perform(put("/api/genres/{id}", id)
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -129,8 +109,9 @@ public class GenreControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void deleteGenreFailsIfBooksExist() throws Exception {
-        long id = idOfTestGenre1(); // Test Genre 1 has books (Test Book 1 and Book For Deletion) in insertTestRecords.sql
-        mockMvc.perform(delete("/api/genres/{id}", id))
+        long id = testDataHelper.idOfGenre(TestFixtures.GENRE_1_NAME);
+        mockMvc.perform(delete("/api/genres/{id}", id)
+                        .with(csrf()))
                 .andExpect(status().isConflict());
     }
 
@@ -140,6 +121,7 @@ public class GenreControllerTest {
         // 1. Create a genre via API
         CreateGenreRequestDto request = new CreateGenreRequestDto("Temporary Genre");
         String jsonResponse = mockMvc.perform(post("/api/genres")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -148,14 +130,16 @@ public class GenreControllerTest {
         long id = JsonPath.parse(jsonResponse).read("$.id", Long.class);
 
         // 2. Delete it via API
-        mockMvc.perform(delete("/api/genres/{id}", id))
+        mockMvc.perform(delete("/api/genres/{id}", id)
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     @WithMockUser(roles = "USER")
     void userCannotDeleteGenre() throws Exception {
-        mockMvc.perform(delete("/api/genres/1"))
+        mockMvc.perform(delete("/api/genres/1")
+                        .with(csrf()))
                 .andExpect(status().isForbidden());
     }
 }

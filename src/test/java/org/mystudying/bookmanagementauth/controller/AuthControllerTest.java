@@ -3,7 +3,9 @@ package org.mystudying.bookmanagementauth.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.dto.*;
+import org.mystudying.bookmanagementauth.services.UserAuthLifecycleService;
 import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -18,6 +20,7 @@ import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,6 +39,9 @@ public class AuthControllerTest {
     @MockBean
     private UserService userService;
 
+    @MockBean
+    private UserAuthLifecycleService authLifecycleService;
+
     public AuthControllerTest(MockMvc mockMvc, ObjectMapper objectMapper) {
         this.mockMvc = mockMvc;
         this.objectMapper = objectMapper;
@@ -50,9 +56,10 @@ public class AuthControllerTest {
         );
         UserDto userDto = new UserDto(100L, "New User", "newuser@example.com", false, Set.of("ROLE_USER"));
 
-        when(userService.register(any(RegisterRequestDto.class))).thenReturn(userDto);
+        when(authLifecycleService.register(any(RegisterRequestDto.class))).thenReturn(userDto);
 
         mockMvc.perform(post("/api/auth/register")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registration)))
                 .andExpect(status().isCreated())
@@ -69,9 +76,11 @@ public class AuthControllerTest {
 
     @Test
     void loginWithValidCredentialsReturnsOk() throws Exception {
+
         mockMvc.perform(post("/api/auth/login")
-                        .param("username", "test1@example.com")
-                        .param("password", "password"))
+                        .with(csrf())
+                        .param("username", TestFixtures.USER_1_EMAIL)
+                        .param("password", TestFixtures.COMMON_PASSWORD))
                 .andExpect(status().isOk())
                 .andExpect(authenticated())
                 .andExpect(jsonPath("$.message").value("Login successful"));
@@ -79,22 +88,24 @@ public class AuthControllerTest {
 
     @Test
     void logoutReturnsFoundAndRedirects() throws Exception {
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(csrf()))
                 .andExpect(status().isFound())
                 .andExpect(redirectedUrl("/"));
     }
 
     @Test
     void requestPasswordResetReturnsOk() throws Exception {
-        PasswordResetRequestDto request = new PasswordResetRequestDto("test1@example.com");
+        PasswordResetRequestDto request = new PasswordResetRequestDto(TestFixtures.USER_1_EMAIL);
 
         mockMvc.perform(post("/api/auth/password-reset-request")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Password reset link sent to your email if an account exists."));
 
-        verify(userService).requestPasswordReset("test1@example.com");
+        verify(authLifecycleService).requestPasswordReset(TestFixtures.USER_1_EMAIL);
     }
 
     @Test
@@ -102,11 +113,12 @@ public class AuthControllerTest {
         ResetPasswordDto request = new ResetPasswordDto("valid-token", "new-password123");
 
         mockMvc.perform(post("/api/auth/reset-password")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Your password has been reset successfully."));
 
-        verify(userService).resetPassword("valid-token", "new-password123");
+        verify(authLifecycleService).resetPassword("valid-token", "new-password123");
     }
 }

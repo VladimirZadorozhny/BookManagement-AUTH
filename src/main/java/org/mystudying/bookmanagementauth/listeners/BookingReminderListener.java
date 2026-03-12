@@ -16,8 +16,8 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.context.event.EventListener;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.OffsetDateTime;
 
@@ -40,15 +40,21 @@ public class BookingReminderListener {
     }
 
     @Async("mailExecutor")
-    @EventListener
-    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Retryable(
             retryFor = MessagingException.class,
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000)
     )
     public void handleBookingReminder(BookingReminderEvent event) throws MessagingException {
-        // First, attempt to send the email
+        // 1. Check if already sent (Idempotency check)
+        boolean alreadySent = bookingReminderLogRepository.existsByBookingIdAndReminderType(event.bookingId(), event.reminderType());
+        if (alreadySent) {
+            log.info("Reminder already logged for booking {} of type {}. Skipping.", event.bookingId(), event.reminderType());
+            return;
+        }
+
+        // 2. Attempt to send the email
         log.info("Attempting to send booking reminder email of type {} to: {}", event.reminderType(), event.email());
         String subject = getSubject(event);
         String body = buildBody(event);
@@ -56,12 +62,12 @@ public class BookingReminderListener {
         mailService.send(event.email(), subject, body);
         log.info("Booking reminder email of type {} sent to: {}", event.reminderType(), event.email());
 
-        // Log successful send to prevent duplicates, only AFTER email is successfully sent
+        // 3. Log successful send to prevent future duplicates
         try {
             bookingReminderLogRepository.save(new BookingReminderLog(event.bookingId(), event.reminderType(), OffsetDateTime.now()));
             log.info("Booking reminder log saved for booking {} of type {}", event.bookingId(), event.reminderType());
         } catch (DataIntegrityViolationException e) {
-            log.warn("Reminder already logged for booking {} of type {}. This should not happen if previous send was successful.", event.bookingId(), event.reminderType());
+            log.warn("Reminder was concurrently logged for booking {} of type {}. Skipping duplicate log.", event.bookingId(), event.reminderType());
         }
     }
 
