@@ -9,13 +9,15 @@ import org.mystudying.bookmanagementauth.repositories.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class AdminMailService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminMailService.class);
@@ -39,9 +41,8 @@ public class AdminMailService {
     }
 
     public void sendBulkMailToOverdueUsers(String subject, String body) {
-        List<User> overdueUsers = bookingRepository.findActiveWithDetails(Pageable.unpaged())
+        List<User> overdueUsers = bookingRepository.findOverdueBookingsForMailing(LocalDate.now(ZoneOffset.UTC))
                 .stream()
-                .filter(Booking::isExpired)
                 .map(Booking::getUser)
                 .distinct()
                 .toList();
@@ -55,8 +56,8 @@ public class AdminMailService {
         publishAdminUserMailEvent(user.getId(), user.getEmail(), subject, body);
     }
 
-    @Transactional
-    public void publishAdminUserMailEvent(Long userId, String email, String subject, String body) {
+
+    private void publishAdminUserMailEvent(Long userId, String email, String subject, String body) {
         log.debug("Publishing admin mail event for user {}", userId);
         eventPublisher.publishEvent(new AdminUserMailRequestedEvent(userId, email, subject, body));
     }

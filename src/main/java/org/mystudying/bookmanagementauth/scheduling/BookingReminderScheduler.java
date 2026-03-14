@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Component
@@ -23,10 +24,10 @@ public class BookingReminderScheduler {
         this.reminderService = reminderService;
     }
 
-    @Scheduled(cron = "0 0 9 * * *") // Every day at 9 AM
+    @Scheduled(cron = "0 0 9 * * *", zone = "UTC") // Every day at 9 AM
     public void sendReminders() {
         log.info("Running scheduled booking reminder job.");
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         OffsetDateTime startOfDay = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
         OffsetDateTime endOfDay = now.withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
 

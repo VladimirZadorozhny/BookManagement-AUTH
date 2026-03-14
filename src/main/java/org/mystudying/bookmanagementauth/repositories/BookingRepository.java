@@ -69,6 +69,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "(SELECT COUNT(b2) FROM Booking b2 WHERE b2.returnedAt IS NULL AND b2.user = u AND b2.user.active = TRUE) >= :count")
     List<Booking> findHeavyUserBookingsForMailing(@Param("count") Long count); // New method for mailing
 
+    @Query(value = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.book WHERE b.returnedAt IS NULL AND b.dueAt < :now")
+    List<Booking> findOverdueBookingsForMailing(@Param("now") LocalDate now);
+
+
     long countByBookId(Long bookId);
 
     // --- New Reminder Queries ---

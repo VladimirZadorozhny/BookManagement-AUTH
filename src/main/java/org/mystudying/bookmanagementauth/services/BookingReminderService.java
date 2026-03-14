@@ -24,7 +24,7 @@ public class BookingReminderService {
         this.eventPublisher = eventPublisher;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public void processReminder(Long bookingId, ReminderType type) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));

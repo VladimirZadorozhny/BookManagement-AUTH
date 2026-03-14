@@ -1,8 +1,10 @@
 package org.mystudying.bookmanagementauth.auth;
 
 import org.junit.jupiter.api.Test;
+import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -15,6 +17,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Sql("/insertTestRecords.sql")
 public class AuthFlowTest extends AbstractSecurityIntegrationTest {
+
+    @MockBean
+    MailService mailService;
 
 
     @Test

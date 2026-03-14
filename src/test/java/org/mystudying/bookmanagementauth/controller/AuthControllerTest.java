@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.services.UserAuthLifecycleService;
 import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,10 +36,10 @@ public class AuthControllerTest {
 
     private final MockMvc mockMvc;
     private final ObjectMapper objectMapper;
-
+    @MockBean
+    MailService mailService;
     @MockBean
     private UserService userService;
-
     @MockBean
     private UserAuthLifecycleService authLifecycleService;
 
