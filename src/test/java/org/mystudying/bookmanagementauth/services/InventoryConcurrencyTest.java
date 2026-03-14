@@ -6,7 +6,8 @@ import org.mystudying.bookmanagementauth.exceptions.BookNotAvailableException;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.InsufficientAvailableStockException;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
-import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelper;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperBarrier;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperLatch;
 import org.mystudying.bookmanagementauth.support.db.TestDataCleanup;
 import org.mystudying.bookmanagementauth.support.db.TestDataHelper;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
-@Import({InventoryService.class, TestDataHelper.class, TestDataCleanup.class, ConcurrentTestHelper.class})
+@Import({InventoryService.class, TestDataHelper.class, TestDataCleanup.class, ConcurrentTestHelperLatch.class, ConcurrentTestHelperBarrier.class})
 @Sql({"/insertTestRecords.sql"})
 public class InventoryConcurrencyTest {
 
@@ -36,21 +37,24 @@ public class InventoryConcurrencyTest {
     private final BookRepository bookRepository;
     private final TestDataHelper testDataHelper;
     private final TestDataCleanup testDataCleanup;
-    private final ConcurrentTestHelper concurrentTestHelper;
+    private final ConcurrentTestHelperLatch concurrentTestHelperLatch;
+    private final ConcurrentTestHelperBarrier concurrentTestHelperBarrier;
+
 
     public InventoryConcurrencyTest(JdbcClient jdbcClient,
                                     InventoryService inventoryService,
                                     TransactionTemplate txTemplate,
                                     BookRepository bookRepository,
                                     TestDataHelper testDataHelper,
-                                    TestDataCleanup testDataCleanup, ConcurrentTestHelper concurrentTestHelper) {
+                                    TestDataCleanup testDataCleanup, ConcurrentTestHelperLatch concurrentTestHelperLatch, ConcurrentTestHelperBarrier concurrentTestHelperBarrier) {
         this.jdbcClient = jdbcClient;
         this.inventoryService = inventoryService;
         this.txTemplate = txTemplate;
         this.bookRepository = bookRepository;
         this.testDataHelper = testDataHelper;
         this.testDataCleanup = testDataCleanup;
-        this.concurrentTestHelper = concurrentTestHelper;
+        this.concurrentTestHelperLatch = concurrentTestHelperLatch;
+        this.concurrentTestHelperBarrier = concurrentTestHelperBarrier;
     }
 
     @Test
@@ -79,7 +83,9 @@ public class InventoryConcurrencyTest {
                 });
             }
 
-            List<Boolean> results = concurrentTestHelper.runParallel(tasks, tasks.size());
+//            List<Boolean> results = concurrentTestHelperLatch.runParallel(tasks, tasks.size());
+            List<Boolean> results = concurrentTestHelperBarrier.runParallel(tasks, tasks.size());
+
             long incrementSuccessCount = results.stream().filter(r -> r).count();
 
             Book book = bookRepository.findById(bookId).orElseThrow(() -> new BookNotFoundException(bookId));
@@ -137,7 +143,9 @@ public class InventoryConcurrencyTest {
                 });
             }
 
-            List<Boolean> results = concurrentTestHelper.runParallel(tasks, tasks.size());
+//            List<Boolean> results = concurrentTestHelperLatch.runParallel(tasks, tasks.size());
+            List<Boolean> results = concurrentTestHelperBarrier.runParallel(tasks, tasks.size());
+
             long writeOffSuccessCount = results.stream().filter(r -> r).count();
 
             assertThat(writeOffSuccessCount).isEqualTo(initialAvailable / writeOffAmount); // 3 * 3 = 9. 4th would be 12 > 10.

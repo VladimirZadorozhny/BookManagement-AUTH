@@ -7,11 +7,12 @@ import org.mystudying.bookmanagementauth.services.UserAuthLifecycleService;
 import org.mystudying.bookmanagementauth.services.UserBookingService;
 import org.mystudying.bookmanagementauth.services.UserService;
 import org.mystudying.bookmanagementauth.services.VerificationService;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperBarrier;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.mystudying.bookmanagementauth.support.db.TestDataCleanup;
 import org.mystudying.bookmanagementauth.support.db.TestDataHelper;
 import org.mystudying.bookmanagementauth.support.mail.MailTestUtils;
-import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelper;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperLatch;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,7 +48,10 @@ public abstract class AbstractSecurityIntegrationTest {
     protected MailTestUtils mailTestUtils;
 
     @Autowired
-    protected ConcurrentTestHelper concurrentTestHelper;
+    protected ConcurrentTestHelperLatch concurrentTestHelperLatch;
+
+    @Autowired
+    protected ConcurrentTestHelperBarrier concurrentTestHelperBarrier;
 
     @Autowired
     protected UserService userService;
@@ -88,10 +92,10 @@ public abstract class AbstractSecurityIntegrationTest {
     protected UserDto signupAndVerify(String name, String email, String password) {
         RegisterRequestDto registration = new RegisterRequestDto(name, email, password);
         UserDto userDto = authLifecycleService.register(registration);
-        
+
         String token = jdbcClient.sql("SELECT token FROM verification_token WHERE user_id = ?")
                 .param(userDto.id()).query(String.class).single();
-        
+
         verificationService.verifyToken(token);
         return userDto;
     }

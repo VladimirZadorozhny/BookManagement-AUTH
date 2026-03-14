@@ -7,45 +7,46 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * Helper component for orchestrating concurrent execution in tests.
+ * Helper component for orchestrating concurrent execution in tests with CyclicBarrier.
  */
 @Component
-public class ConcurrentTestHelper {
-
+public class ConcurrentTestHelperBarrier {
     /**
      * Executes a list of tasks in parallel using a fixed thread pool.
      */
-    public <T> List<T> runParallel(List<Callable<T>> tasks, int threadCount) {
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    public <T> List<T> runParallel(List<Callable<T>> tasks, int threadCount) throws InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount, r -> {
+            Thread t = new Thread(r);
+            t.setName("test-worker-" + t.getId());
+            return t;
+        });
 
-        CountDownLatch ready = new CountDownLatch(tasks.size());
-        CountDownLatch start = new CountDownLatch(1);
-
-        List<Future<T>> futures = new ArrayList<>();
+        CyclicBarrier barrier = new CyclicBarrier(tasks.size());
 
         try {
 
+            List<Future<T>> futures = new ArrayList<>();
+
             for (Callable<T> task : tasks) {
                 futures.add(executor.submit(() -> {
-                    ready.countDown();
-                    start.await();
+                    barrier.await(5, TimeUnit.SECONDS);
                     return task.call();
                 }));
             }
 
-            ready.await();      // wait until all threads are ready
-            start.countDown();  // release them simultaneously
-
             List<T> results = new ArrayList<>();
-            for (Future<T> f : futures) {
-                results.add(f.get());
+
+            for (Future<T> future : futures) {
+                results.add(future.get(10, TimeUnit.SECONDS));
             }
+
             return results;
 
         } catch (Exception e) {
             throw new RuntimeException("Concurrent execution failed", e);
         } finally {
             executor.shutdown();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
 
@@ -53,7 +54,7 @@ public class ConcurrentTestHelper {
     /**
      * Executes the same task multiple times in parallel.
      */
-    public <T> List<T> runParallel(Callable<T> task, int count) {
+    public <T> List<T> runParallel(Callable<T> task, int count) throws InterruptedException {
         List<Callable<T>> tasks = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             tasks.add(task);

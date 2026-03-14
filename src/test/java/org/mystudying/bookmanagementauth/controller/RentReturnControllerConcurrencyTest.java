@@ -72,7 +72,9 @@ public class RentReturnControllerConcurrencyTest extends AbstractSecurityIntegra
         });
 
         // Invoke both tasks concurrently using the helper
-        List<Integer> statusCodes = concurrentTestHelper.runParallel(List.of(task1, task2), 2);
+//        List<Integer> statusCodes = concurrentTestHelperLatch.runParallel(List.of(task1, task2), 2);
+        List<Integer> statusCodes = concurrentTestHelperBarrier.runParallel(List.of(task1, task2), 2);
+
 
         // Assert that one request succeeded (204) and the other - failed (409), but without guaranty which task did the job first; we check the set content but not the codes' order
         assertThat(statusCodes).containsExactlyInAnyOrder(204, 409);
@@ -118,7 +120,9 @@ public class RentReturnControllerConcurrencyTest extends AbstractSecurityIntegra
         });
 
         // Invoke both tasks concurrently using the helper
-        List<Integer> statusCodes = concurrentTestHelper.runParallel(List.of(task1, task2), 2);
+//        List<Integer> statusCodes = concurrentTestHelperLatch.runParallel(List.of(task1, task2), 2);
+        List<Integer> statusCodes = concurrentTestHelperBarrier.runParallel(List.of(task1, task2), 2);
+
 
         // Assert that both requests succeeded (204)
         assertThat(statusCodes).containsOnly(204);
@@ -160,7 +164,9 @@ public class RentReturnControllerConcurrencyTest extends AbstractSecurityIntegra
         }
 
         // Invoke ten tasks concurrently using the helper
-        List<Integer> statusCodes = concurrentTestHelper.runParallel(tasks, 10);
+//        List<Integer> statusCodes = concurrentTestHelperLatch.runParallel(tasks, 10);
+        List<Integer> statusCodes = concurrentTestHelperBarrier.runParallel(tasks, 10);
+
 
         long successCount = statusCodes.stream()
                 .filter(code -> code == 204)

@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
 import org.mystudying.bookmanagementauth.dto.UserDto;
 import org.mystudying.bookmanagementauth.exceptions.TokenAlreadyUsedException;
+import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TokenConcurrencyIntegrationTest extends AbstractSecurityIntegrationTest {
 
     private static final String TEST_EMAIL = "conc.token@example.com";
+
+    @MockBean
+    private MailService mailService;
 
     @AfterEach
     void cleanup() {
@@ -45,7 +50,9 @@ public class TokenConcurrencyIntegrationTest extends AbstractSecurityIntegration
             }
         };
 
-        List<Boolean> results = concurrentTestHelper.runParallel(task, 2);
+//        List<Boolean> results = concurrentTestHelperLatch.runParallel(task, 2);
+        List<Boolean> results = concurrentTestHelperBarrier.runParallel(task, 2);
+
 
         // THEN: One should be true (success), one should be false (TokenAlreadyUsedException)
         long successCount = results.stream().filter(r -> r).count();

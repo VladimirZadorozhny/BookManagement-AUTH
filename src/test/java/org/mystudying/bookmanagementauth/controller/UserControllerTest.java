@@ -256,7 +256,8 @@ public class UserControllerTest extends AbstractSecurityIntegrationTest {
         );
 
         try {
-            List<Integer> statusCodes = concurrentTestHelper.runParallel(List.of(task1, task2), 2);
+//            List<Integer> statusCodes = concurrentTestHelperLatch.runParallel(List.of(task1, task2), 2);
+            List<Integer> statusCodes = concurrentTestHelperBarrier.runParallel(List.of(task1, task2), 2);
             assertThat(statusCodes).containsExactlyInAnyOrder(204, 409);
         } finally {
             testDataCleanup.cleanupAllTestSqlData();

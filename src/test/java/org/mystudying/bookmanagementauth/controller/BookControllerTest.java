@@ -17,7 +17,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -268,7 +267,7 @@ public class BookControllerTest extends AbstractSecurityIntegrationTest {
         });
 
         try {
-            List<Integer> statusCodes = concurrentTestHelper.runParallel(List.of(task1, task2), 2);
+            List<Integer> statusCodes = concurrentTestHelperBarrier.runParallel(List.of(task1, task2), 2);
 
             assertThat(statusCodes).containsExactlyInAnyOrder(200, 409);
 

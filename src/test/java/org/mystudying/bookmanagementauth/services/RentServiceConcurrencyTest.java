@@ -8,10 +8,11 @@ import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.InsufficientAvailableStockException;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperBarrier;
 import org.mystudying.bookmanagementauth.support.db.TestDataCleanup;
 import org.mystudying.bookmanagementauth.support.db.TestDataHelper;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
-import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelper;
+import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperLatch;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -31,7 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Import({UserService.class, UserBookingService.class, InventoryService.class, ConcurrentTestHelper.class, TestDataCleanup.class, TestDataHelper.class})
+@Import({UserService.class, UserBookingService.class, InventoryService.class, ConcurrentTestHelperLatch.class, TestDataCleanup.class, TestDataHelper.class, ConcurrentTestHelperBarrier.class})
 @Sql({"/insertConcurrentUsersTestRecords.sql", "/insertTestRecords.sql"})
 public class RentServiceConcurrencyTest {
 
@@ -41,7 +42,8 @@ public class RentServiceConcurrencyTest {
     private final TransactionTemplate txTemplate;
     private final BookRepository bookRepository;
     private final InventoryService inventoryService;
-    private final ConcurrentTestHelper concurrentTestHelper;
+    private final ConcurrentTestHelperLatch concurrentTestHelperLatch;
+    private final ConcurrentTestHelperBarrier concurrentTestHelperBarrier;
     private final TestDataCleanup testDataCleanup;
     private final TestDataHelper testDataHelper;
 
@@ -54,7 +56,7 @@ public class RentServiceConcurrencyTest {
                                       TransactionTemplate txTemplate,
                                       BookRepository bookRepository,
                                       InventoryService inventoryService,
-                                      ConcurrentTestHelper concurrentTestHelper,
+                                      ConcurrentTestHelperLatch concurrentTestHelperLatch, ConcurrentTestHelperBarrier concurrentTestHelperBarrier,
                                       TestDataCleanup testDataCleanup,
                                       TestDataHelper testDataHelper) {
         this.jdbcClient = jdbcClient;
@@ -63,7 +65,8 @@ public class RentServiceConcurrencyTest {
         this.txTemplate = txTemplate;
         this.bookRepository = bookRepository;
         this.inventoryService = inventoryService;
-        this.concurrentTestHelper = concurrentTestHelper;
+        this.concurrentTestHelperLatch = concurrentTestHelperLatch;
+        this.concurrentTestHelperBarrier = concurrentTestHelperBarrier;
         this.testDataCleanup = testDataCleanup;
         this.testDataHelper = testDataHelper;
     }
@@ -100,7 +103,8 @@ public class RentServiceConcurrencyTest {
             });
         }
 
-        List<HttpStatus> results = concurrentTestHelper.runParallel(tasks, userIds.size());
+//        List<HttpStatus> results = concurrentTestHelperLatch.runParallel(tasks, userIds.size());
+        List<HttpStatus> results = concurrentTestHelperBarrier.runParallel(tasks, userIds.size());
 
         long successCount = results.stream().filter(s -> s == HttpStatus.NO_CONTENT).count();
         long conflictCount = results.stream().filter(s -> s == HttpStatus.CONFLICT).count();
@@ -152,7 +156,8 @@ public class RentServiceConcurrencyTest {
             return true; // Replenish returns void, using null as placeholder
         });
 
-        List<Boolean> results = concurrentTestHelper.runParallel(tasks, tasks.size());
+//        List<Boolean> results = concurrentTestHelperLatch.runParallel(tasks, tasks.size());
+        List<Boolean> results = concurrentTestHelperBarrier.runParallel(tasks, tasks.size());
 
         long rentSuccessCount = results.subList(0, tasks.size() - 1).stream().filter(r -> r).count();
         boolean replenishResult = results.get(tasks.size() - 1); // The replenish task
@@ -206,7 +211,9 @@ public class RentServiceConcurrencyTest {
             }
         });
 
-        List<Boolean> results = concurrentTestHelper.runParallel(tasks, 5);
+//        List<Boolean> results = concurrentTestHelperLatch.runParallel(tasks, 5);
+        List<Boolean> results = concurrentTestHelperBarrier.runParallel(tasks, 5);
+
 
         // Last task is the write-off task
         boolean writeOffResult = results.get(4);
