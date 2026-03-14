@@ -1,17 +1,12 @@
 package org.mystudying.bookmanagementauth.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "booking_reminder_log")
-@Getter
-@Setter
-@NoArgsConstructor
+
 public class BookingReminderLog {
 
     @Id
@@ -32,5 +27,24 @@ public class BookingReminderLog {
         this.bookingId = bookingId;
         this.reminderType = reminderType;
         this.sentAt = sentAt;
+    }
+
+    protected BookingReminderLog() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Long getBookingId() {
+        return bookingId;
+    }
+
+    public ReminderType getReminderType() {
+        return reminderType;
+    }
+
+    public OffsetDateTime getSentAt() {
+        return sentAt;
     }
 }
