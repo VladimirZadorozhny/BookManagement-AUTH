@@ -1,6 +1,7 @@
 package org.mystudying.bookmanagementauth.domain;
 
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -98,10 +99,10 @@ public class Booking {
 
     public long overdueDays() {
         if (returnedAt != null) {
-             if (returnedAt.isAfter(dueAt)) {
-                 return ChronoUnit.DAYS.between(dueAt, returnedAt);
-             }
-             return 0;
+            if (returnedAt.isAfter(dueAt)) {
+                return ChronoUnit.DAYS.between(dueAt, returnedAt);
+            }
+            return 0;
         }
         if (!isExpired()) return 0;
         return ChronoUnit.DAYS.between(dueAt, LocalDate.now());
@@ -116,7 +117,7 @@ public class Booking {
         if (this == o) return true;
         if (!(o instanceof Booking)) return false;
         Booking booking = (Booking) o;
-        return Objects.equals(id, booking.id);
+        return id != null && id.equals(booking.id);
     }
 
     @Override
