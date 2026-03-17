@@ -7,7 +7,7 @@
 </head>
 <body>
 <section th:data-book-id="${bookId}">
-    
+
     <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
             <nav aria-label="breadcrumb" class="mb-4">
@@ -17,7 +17,7 @@
                 </ol>
             </nav>
 
-            <div id="loadingState" class="text-center py-5">
+            <div class="text-center py-5" id="loadingState">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
@@ -30,7 +30,7 @@
                 <div class="card-body">
                     <div class="mb-4 border-bottom pb-3">
                         <p class="mb-2"><strong>Author:</strong>
-                            <a class="text-decoration-none" id="displayAuthor" href="#">Author Name</a>
+                            <a class="text-decoration-none" href="#" id="displayAuthor">Author Name</a>
                         </p>
                         <p class="mb-2"><strong>Year:</strong> <span id="displayYear">2000</span></p>
                         <p class="mb-2"><strong>Genres:</strong>
@@ -39,15 +39,18 @@
                             </span>
                         </p>
                         <p class="mb-0"><strong>Status:</strong>
-                            <span id="displayStatus" class="fw-bold">Status</span>
-                            <span class="text-muted small" sec:authorize="hasRole('ADMIN')" id="displayAvailable"></span>
+                            <span class="fw-bold" id="displayStatus">Status</span>
+                            <span class="text-muted small" id="displayAvailable"
+                                  sec:authorize="hasRole('ADMIN')"></span>
                         </p>
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button class="btn btn-primary btn-lg d-none" id="btnRent" sec:authorize="isAuthenticated()">Rent this Book</button>
-                        <a class="btn btn-primary btn-lg d-none" id="btnLoginToRent" th:href="@{/login}" sec:authorize="!isAuthenticated()">Login to Rent</a>
-
+                        <button class="btn btn-primary btn-lg d-none" id="btnRent" sec:authorize="isAuthenticated()">
+                            Rent this Book
+                        </button>
+                        <a class="btn btn-primary btn-lg d-none" id="btnLoginToRent" sec:authorize="!isAuthenticated()"
+                           th:href="@{/login}">Login to Rent</a>
                         <div class="row g-2 mt-2" sec:authorize="hasRole('ADMIN')">
                             <div class="col-6">
                                 <button class="btn btn-outline-warning w-100" id="btnShowEdit">Edit Metadata</button>
@@ -62,7 +65,8 @@
                                 <button class="btn btn-outline-success w-100" id="btnReplenish">Replenish Stock</button>
                             </div>
                             <div class="col-6">
-                                <button class="btn btn-outline-secondary w-100" id="btnWriteOff">Write-off Stock</button>
+                                <button class="btn btn-outline-secondary w-100" id="btnWriteOff">Write-off Stock
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -92,13 +96,14 @@
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-bold">Genres (Hold Ctrl to multi-select)</label>
-                            <select class="form-select" id="editGenres" name="genreIds" multiple required size="5">
+                            <select class="form-select" id="editGenres" multiple name="genreIds" required size="5">
                                 <!-- Populated via JS -->
                             </select>
                         </div>
                         <div class="d-flex justify-content-end gap-2">
                             <button class="btn btn-secondary" id="btnCancelEdit" type="button">Cancel</button>
-                            <button class="btn btn-primary px-4" disabled id="btnSaveBook" type="submit">Save Changes</button>
+                            <button class="btn btn-primary px-4" disabled id="btnSaveBook" type="submit">Save Changes
+                            </button>
                         </div>
                     </form>
                 </div>

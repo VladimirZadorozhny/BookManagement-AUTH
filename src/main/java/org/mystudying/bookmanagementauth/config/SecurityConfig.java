@@ -41,13 +41,15 @@ public class SecurityConfig {
     private final JsonAuthenticationSuccessHandler successHandler;
     private final JsonAuthenticationFailureHandler failureHandler;
     private final CustomLogoutSuccessHandler logoutSuccessHandler;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     public SecurityConfig(JsonAuthenticationSuccessHandler successHandler,
                           JsonAuthenticationFailureHandler failureHandler,
-                          CustomLogoutSuccessHandler logoutSuccessHandler) {
+                          CustomLogoutSuccessHandler logoutSuccessHandler, CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.logoutSuccessHandler = logoutSuccessHandler;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
 
     @Bean
@@ -120,6 +122,7 @@ public class SecurityConfig {
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(customAccessDeniedHandler)
                 );
 
         return http.build();

@@ -13,6 +13,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Sql("/insertTestRecords.sql")
@@ -100,5 +101,16 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
     void anonymousCannotAccessMe() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminEndpointReturnsForbiddenForUser() throws Exception {
+        MockHttpSession session = loginAsUser(); // USER role
+
+        mockMvc.perform(post("/api/books")
+                        .with(csrf())
+                        .session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     }
 }
