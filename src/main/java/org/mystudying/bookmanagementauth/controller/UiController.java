@@ -72,12 +72,12 @@ public class UiController {
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public String profile(@AuthenticationPrincipal UserPrincipal principal, Model model) {
-        if (principal != null) {
-            var user = userService.findById(principal.getId()).orElse(null);
-            model.addAttribute("user", user);
-        }
+        var user = userService.findById(principal.getId()).orElse(null);
+
+        model.addAttribute("user", user);
         model.addAttribute("showSidebar", true);
         model.addAttribute("sidebarType", "user_profile");
+
         return "user";
     }
 

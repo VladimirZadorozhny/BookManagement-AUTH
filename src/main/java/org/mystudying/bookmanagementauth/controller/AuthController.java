@@ -7,11 +7,11 @@ import org.mystudying.bookmanagementauth.dto.PasswordResetRequestDto;
 import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
 import org.mystudying.bookmanagementauth.dto.ResetPasswordDto;
 import org.mystudying.bookmanagementauth.dto.UserDto;
-import org.mystudying.bookmanagementauth.exceptions.UnauthorizedException;
 import org.mystudying.bookmanagementauth.services.UserAuthLifecycleService;
 import org.mystudying.bookmanagementauth.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,11 +47,9 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public UserDto getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
-        if (principal == null) {
-            throw new UnauthorizedException("User is not authenticated");
-        }
         return userService.findById(principal.getId())
-                .orElseThrow(() -> new UnauthorizedException("User session is valid but user not found"));
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
     }
 }
