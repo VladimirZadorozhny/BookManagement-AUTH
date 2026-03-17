@@ -40,7 +40,7 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
                         .with(csrf())
                         .session(session))
                 .andExpect(status().isFound())
-                .andExpect(MockMvcResultMatchers.redirectedUrl("/"));
+                .andExpect(MockMvcResultMatchers.redirectedUrl("/login?logout"));
 
         mockMvc.perform(get("/api/auth/me")
                         .session(session))

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
+import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -88,11 +89,23 @@ public class AuthControllerTest {
     }
 
     @Test
+    void loginWithInvalidCredentialsReturnsBadCredentials() throws Exception {
+
+        mockMvc.perform(post("/api/auth/login")
+                        .with(csrf())
+                        .param("username", TestFixtures.USER_1_EMAIL)
+                        .param("password", "wrongPassword"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(unauthenticated())
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    }
+
+    @Test
     void logoutReturnsFoundAndRedirects() throws Exception {
         mockMvc.perform(post("/api/auth/logout")
                         .with(csrf()))
                 .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/"));
+                .andExpect(redirectedUrl("/login?logout"));
     }
 
     @Test

@@ -34,11 +34,11 @@ public class SecurityConfig {
 
     private final JsonAuthenticationSuccessHandler successHandler;
     private final JsonAuthenticationFailureHandler failureHandler;
-    private final JsonLogoutSuccessHandler logoutSuccessHandler;
+    private final CustomLogoutSuccessHandler logoutSuccessHandler;
 
     public SecurityConfig(JsonAuthenticationSuccessHandler successHandler,
                           JsonAuthenticationFailureHandler failureHandler,
-                          JsonLogoutSuccessHandler logoutSuccessHandler) {
+                          CustomLogoutSuccessHandler logoutSuccessHandler) {
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
         this.logoutSuccessHandler = logoutSuccessHandler;
@@ -71,7 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/favicon.ico").permitAll()
 
                         // 3. PUBLIC AUTH (Login/Register APIs)
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
 
                         // 4. ADMIN-ONLY MUTATIONS (Catalog Management)
                         .requestMatchers(HttpMethod.POST, "/api/books/**", "/api/authors/**", "/api/genres/**").hasRole("ADMIN")

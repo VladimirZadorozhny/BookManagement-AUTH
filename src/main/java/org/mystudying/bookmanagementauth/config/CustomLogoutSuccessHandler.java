@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class JsonLogoutSuccessHandler implements LogoutSuccessHandler {
+public class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
 
     @Override
     public void onLogoutSuccess(
@@ -17,7 +17,6 @@ public class JsonLogoutSuccessHandler implements LogoutSuccessHandler {
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException {
-        response.setStatus(HttpServletResponse.SC_NO_CONTENT); // 204
-        response.sendRedirect("/");
+        response.sendRedirect("/login?logout");
     }
 }
