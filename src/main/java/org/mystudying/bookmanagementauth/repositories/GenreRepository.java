@@ -1,6 +1,9 @@
 package org.mystudying.bookmanagementauth.repositories;
 
 import org.mystudying.bookmanagementauth.domain.Genre;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,5 +23,11 @@ public interface GenreRepository extends JpaRepository<Genre, Long> {
     List<Genre> findAllWithBooks();
 
     boolean existsByNameIgnoreCase(String name);
+
+    @EntityGraph(attributePaths = "books")
+    @Query("SELECT g FROM Genre g")
+    Page<Genre> findAllWithBooks(Pageable pageable);
+
+
 }
 

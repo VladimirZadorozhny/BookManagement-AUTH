@@ -150,8 +150,8 @@ class ReportsPage {
                 <td>${userName || 'N/A'}</td>
                 <td>${userEmail || 'N/A'}</td>
                 <td>${bookTitle || 'N/A'}</td>
-                <td>${new Date(borrowedAt).toLocaleDateString()}</td>
-                <td>${returnedAt ? new Date(returnedAt).toLocaleDateString() : "-"}</td>
+                <td>${new Date(borrowedAt).toLocaleDateString("nl-BE")}</td>
+                <td>${returnedAt ? new Date(returnedAt).toLocaleDateString("nl-BE") : "-"}</td>
                 <td class="${overdueClass}">${overdueDisplay}</td>
                 <td class="${fineClass}">${fineDisplay}</td>
                 <td class="${finePaidClass}">${finePaidText}</td>

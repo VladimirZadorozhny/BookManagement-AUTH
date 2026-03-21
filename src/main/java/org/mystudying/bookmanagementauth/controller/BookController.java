@@ -7,13 +7,14 @@ import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.services.BookService;
 import org.mystudying.bookmanagementauth.services.InventoryService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/books")
@@ -29,45 +30,32 @@ public class BookController {
     }
 
     @GetMapping
-    public List<BookDto> getAllBooks(@RequestParam Optional<Boolean> available,
+    public Page<BookDto> getAllBooks(@RequestParam Optional<Boolean> available,
                                      @RequestParam Optional<Integer> year,
                                      @RequestParam Optional<String> authorName,
                                      @RequestParam Optional<String> title,
                                      @RequestParam Optional<String> authorPartName,
-                                     @RequestParam Optional<Long> genreId) {
+                                     @RequestParam Optional<Long> genreId,
+                                     @PageableDefault(size = 9) Pageable pageable) {
         if (available.isPresent()) {
-            return bookService.findByAvailability(available.get()).stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return bookService.findByAvailability(available.get(), pageable).map(this::toDto);
         }
         if (genreId.isPresent()) {
-            return bookService.findByGenreId(genreId.get()).stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return bookService.findByGenreId(genreId.get(), pageable).map(this::toDto);
         }
         if (year.isPresent()) {
-            return bookService.findByYear(year.get()).stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return bookService.findByYear(year.get(), pageable).map(this::toDto);
         }
         if (title.isPresent()) {
-            return bookService.findByTitleContaining(title.get()).stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return bookService.findByTitleContaining(title.get(), pageable).map(this::toDto);
         }
         if (authorPartName.isPresent()) {
-            return bookService.findByAuthorNameContaining(authorPartName.get()).stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return bookService.findByAuthorNameContaining(authorPartName.get(), pageable).map(this::toDto);
         }
         if (authorName.isPresent()) {
-            return bookService.findByAuthorName(authorName.get()).stream()
-                    .map(this::toDto)
-                    .collect(Collectors.toList());
+            return bookService.findByAuthorName(authorName.get(), pageable).map(this::toDto);
         }
-        return bookService.findAll().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+        return bookService.findAll(pageable).map(this::toDto);
     }
 
     @GetMapping("/{id}")
@@ -121,7 +109,7 @@ public class BookController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteBook(@PathVariable long id) {
-           bookService.deleteById(id);
+        bookService.deleteById(id);
     }
 
     private BookDto toDto(Book book) {

@@ -138,7 +138,7 @@ class BookDetailsPage {
 
     async loadGenresForEdit() {
         try {
-            const resp = await api.get('/api/genres');
+            const resp = await api.get('/api/genres/books-details');
             const genres = await resp.json();
             this.genreSelect.innerHTML = genres.map(g => {
                 const selected = this.bookData.genres.includes(g.name) ? 'selected' : '';

@@ -6,6 +6,8 @@ import org.mystudying.bookmanagementauth.exceptions.GenreHasBooksException;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,11 @@ public class GenreService {
                 .toList();
     }
 
+    public Page<GenreDto> findAll(Pageable pageable) {
+        return genreRepository.findAll(pageable).map(genre -> new GenreDto(genre.getId(), genre.getName()));
+
+    }
+
     public Optional<GenreDto> findById(long id) {
         return genreRepository.findById(id)
                 .map(genre -> new GenreDto(genre.getId(), genre.getName()));
@@ -48,25 +55,64 @@ public class GenreService {
                         book.getTitle(),
                         book.getYear(),
                         book.getAvailable()
-                        ))
+                ))
                 .toList();
     }
 
-    public List<GenreWithBooksDto> findAllWithBooks() {
-        return genreRepository.findAllWithBooks().stream()
-                .map(genre -> new GenreWithBooksDto(
-                        genre.getId(),
-                        genre.getName(),
-                        genre.getBooks().stream()
-                                .map(book -> new BookDto(
-                                        book.getId(),
-                                        book.getTitle(),
-                                        book.getYear(),
-                                        book.getAvailable()
-                                ))
-                                .toList()
-                ))
-                .toList();
+    public Page<BookDto> findBooksByGenre(String genreName, Pageable pageable) {
+        if (!genreRepository.existsByNameIgnoreCase(genreName)) {
+            throw new GenreNotFoundException(genreName);
+        }
+        return bookRepository.findByGenres_NameIgnoreCase(genreName, pageable)
+                .map(book -> new BookDto(
+                        book.getId(),
+                        book.getTitle(),
+                        book.getYear(),
+                        book.getAvailable()
+                ));
+    }
+
+
+//    public List<GenreWithBooksDto> findAllWithBooks() {
+//        return genreRepository.findAllWithBooks().stream()
+//                .map(genre -> new GenreWithBooksDto(
+//                        genre.getId(),
+//                        genre.getName(),
+//                        genre.getBooks().stream()
+//                                .map(book -> new BookDto(
+//                                        book.getId(),
+//                                        book.getTitle(),
+//                                        book.getYear(),
+//                                        book.getAvailable()
+//                                ))
+//                                .toList()
+//                ))
+//                .toList();
+//    }
+
+    public Page<GenreWithBooksDto> findAllWithBooks(Pageable pageable) {
+        return genreRepository.findAllWithBooks(pageable)
+                .map(genre -> {
+                    List<BookDto> limitedBooks = genre.getBooks()
+                            .stream()
+                            .limit(5)
+                            .map(book -> new BookDto(
+                                    book.getId(),
+                                    book.getTitle(),
+                                    book.getYear(),
+                                    book.getAvailable()
+                            ))
+                            .toList();
+
+                    long total = bookRepository.countBooksByGenreId(genre.getId());
+
+                    return new GenreWithBooksDto(
+                            genre.getId(),
+                            genre.getName(),
+                            limitedBooks,
+                            total
+                    );
+                });
     }
 
     public List<BookDto> findBooksByGenreId(long id) {

@@ -54,6 +54,8 @@ class ModalHelper {
                         result = this.promptInput.value;
                     }
 
+                    btn.blur();
+
                     // Resolve ONLY after the modal is fully hidden to prevent animation conflicts
                     this.modalEl.addEventListener('hidden.bs.modal', () => {
                         // Accessibility: add inert when hidden

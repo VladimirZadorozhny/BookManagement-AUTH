@@ -8,6 +8,9 @@ import org.mystudying.bookmanagementauth.dto.GenreDto;
 import org.mystudying.bookmanagementauth.dto.GenreWithBooksDto;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.services.GenreService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,11 @@ public class GenreController {
     }
 
     @GetMapping
+    public Page<GenreDto> getAllGenres(@PageableDefault(size = 9) Pageable pageable) {
+        return genreService.findAll(pageable);
+    }
+
+    @GetMapping("/books-details")
     public List<GenreDto> getAllGenres() {
         return genreService.findAll();
     }
@@ -37,8 +45,8 @@ public class GenreController {
     }
 
     @GetMapping("/with-books")
-    public List<GenreWithBooksDto> getAllGenresWithBooks() {
-        return genreService.findAllWithBooks();
+    public Page<GenreWithBooksDto> getAllGenresWithBooks(@PageableDefault(size = 9) Pageable pageable) {
+        return genreService.findAllWithBooks(pageable);
     }
 
     @GetMapping("/{id}/books")
@@ -47,8 +55,8 @@ public class GenreController {
     }
 
     @GetMapping("/name/{name}/books")
-    public List<BookDto> getBooksByGenre(@PathVariable String name) {
-        return genreService.findBooksByGenre(name);
+    public Page<BookDto> getBooksByGenre(@PathVariable String name, @PageableDefault(size = 9) Pageable pageable) {
+        return genreService.findBooksByGenre(name, pageable);
     }
 
     @PostMapping

@@ -12,6 +12,8 @@ import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.repositories.AuthorRepository;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,12 +41,24 @@ public class BookService {
         return bookRepository.findAll(Sort.by("title"));
     }
 
+    public Page<Book> findAll(Pageable pageable) {
+        return bookRepository.findAll(pageable);
+    }
+
     public List<Book> findByYear(int year) {
         return bookRepository.findByYear(year);
     }
 
+    public Page<Book> findByYear(int year, Pageable pageable) {
+        return bookRepository.findByYear(year, pageable);
+    }
+
     public List<Book> findByAuthorName(String authorName) {
         return bookRepository.findByAuthorName(authorName);
+    }
+
+    public Page<Book> findByAuthorName(String authorName, Pageable pageable) {
+        return bookRepository.findByAuthorName(authorName, pageable);
     }
 
     public List<Book> findByAuthorId(long authorId) {
@@ -52,12 +66,25 @@ public class BookService {
         return bookRepository.findByAuthor_Id(authorId);
     }
 
+    public Page<Book> findByAuthorId(long authorId, Pageable pageable) {
+        authorRepository.findById(authorId).orElseThrow(() -> new AuthorNotFoundException(authorId));
+        return bookRepository.findByAuthor_Id(authorId, pageable);
+    }
+
     public List<Book> findByGenreId(long genreId) {
         return bookRepository.findByGenres_Id(genreId);
     }
 
+    public Page<Book> findByGenreId(long genreId, Pageable pageable) {
+        return bookRepository.findByGenres_Id(genreId, pageable);
+    }
+
     public List<Book> findByAvailability(boolean available) {
         return bookRepository.findByAvailability(available);
+    }
+
+    public Page<Book> findByAvailability(boolean available, Pageable pageable) {
+        return bookRepository.findByAvailability(available, pageable);
     }
 
     public Optional<Book> findById(long id) {
@@ -80,8 +107,16 @@ public class BookService {
         return bookRepository.findByTitleContainingOrderByTitle(title);
     }
 
+    public Page<Book> findByTitleContaining(String title, Pageable pageable) {
+        return bookRepository.findByTitleContaining(title, pageable);
+    }
+
     public List<Book> findByAuthorNameContaining(String authorName) {
         return bookRepository.findByAuthorNameContaining(authorName);
+    }
+
+    public Page<Book> findByAuthorNameContaining(String authorName, Pageable pageable) {
+        return bookRepository.findByAuthorNameContaining(authorName, pageable);
     }
 
     @Transactional
