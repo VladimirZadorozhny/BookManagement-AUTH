@@ -141,7 +141,7 @@ class BooksPage {
       let finalUrl = query;
 
       const separator = query.includes("?") ? "&" : "?";
-      finalUrl = `${query}25${separator}page=${page}&size=${size}`;
+      finalUrl = `${query}${separator}page=${page}&size=${size}`;
 
 
       console.log("FETCHING:", finalUrl);

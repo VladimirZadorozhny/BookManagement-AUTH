@@ -6,6 +6,9 @@ import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
 import org.mystudying.bookmanagementauth.services.UserBookingService;
 import org.mystudying.bookmanagementauth.services.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +31,8 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public List<UserDto> getAllUsers() {
-        return userService.findAll();
+    public Page<UserDto> getAllUsers(@PageableDefault(size = 10) Pageable pageable) {
+        return userService.findAll(pageable);
     }
 
     @GetMapping("/{id}")
@@ -94,5 +97,19 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void payFine(@PathVariable long userId, @PathVariable long bookingId) {
         bookingService.payFine(userId, bookingId);
+    }
+
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activateUser(@PathVariable long id) {
+        userService.activateUser(id);
+    }
+
+    @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateUser(@PathVariable long id) {
+        userService.deactivateUser(id);
     }
 }

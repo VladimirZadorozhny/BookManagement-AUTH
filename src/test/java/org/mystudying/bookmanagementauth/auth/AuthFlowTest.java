@@ -113,4 +113,38 @@ public class AuthFlowTest extends AbstractSecurityIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     }
+
+    @Test
+    void adminCanDeactivateUserAndLoginFails() throws Exception {
+        // 1. Login as user and check access
+        MockHttpSession userSession = loginAsUser();
+        mockMvc.perform(get("/api/auth/me").session(userSession))
+                .andExpect(status().isOk());
+
+        // 2. Login as admin and deactivate user
+        long userId = testDataHelper.idOfUser(TestFixtures.USER_1_EMAIL);
+        MockHttpSession adminSession = loginAsAdmin();
+        mockMvc.perform(post("/api/users/{id}/deactivate", userId)
+                        .with(csrf())
+                        .session(adminSession))
+                .andExpect(status().isNoContent());
+
+        // 3. Try to login as deactivated user - should fail
+        mockMvc.perform(post("/api/auth/login")
+                        .param("username", TestFixtures.USER_1_EMAIL)
+                        .param("password", TestFixtures.COMMON_PASSWORD))
+                .andExpect(status().isUnauthorized());
+        
+        // 4. Admin activates user back
+        mockMvc.perform(post("/api/users/{id}/activate", userId)
+                        .with(csrf())
+                        .session(adminSession))
+                .andExpect(status().isNoContent());
+
+        // 5. Try to login again - should succeed
+        mockMvc.perform(post("/api/auth/login")
+                        .param("username", TestFixtures.USER_1_EMAIL)
+                        .param("password", TestFixtures.COMMON_PASSWORD))
+                .andExpect(status().isOk());
+    }
 }

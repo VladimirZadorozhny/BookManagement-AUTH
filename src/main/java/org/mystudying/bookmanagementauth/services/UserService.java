@@ -11,6 +11,8 @@ import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
 import org.mystudying.bookmanagementauth.repositories.RoleRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,10 @@ public class UserService {
         return userRepository.findAll(Sort.by("name")).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public Page<UserDto> findAll(Pageable pageable) {
+        return userRepository.findAll(pageable).map(this::toDto);
     }
 
     public Optional<UserDto> findById(long id) {
@@ -98,6 +104,18 @@ public class UserService {
             throw new UserHasBookingsException(id);
         }
         userRepository.delete(user);
+    }
+
+    @Transactional
+    public void activateUser(long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        user.setActive(true);
+    }
+
+    @Transactional
+    public void deactivateUser(long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        user.setActive(false);
     }
 
     private UserDto toDto(User user) {

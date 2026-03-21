@@ -7,6 +7,16 @@ class UsersPage {
         this.createModalEl = byId('createUserModal');
         this.createModal = this.createModalEl ? new bootstrap.Modal(this.createModalEl) : null;
         this.searchInput = byId('searchInput');
+
+        this.paginationControls = byId("pagination-controls");
+        this.prevPageButton = byId("prev-page");
+        this.nextPageButton = byId("next-page");
+        this.pageInfoSpan = byId("page-info");
+
+        this.currentPage = 0;
+        this.totalPages = 0;
+        this.pageSize = 10;
+        this.currentUrl = '/api/users';
     }
 
     init() {
@@ -15,7 +25,10 @@ class UsersPage {
     }
 
     bindEvents() {
-        byId('btnShowAll')?.addEventListener('click', () => this.fetchAndRenderUsers());
+        byId('btnShowAll')?.addEventListener('click', () => {
+            this.currentPage = 0;
+            this.fetchAndRenderUsers('/api/users');
+        });
         byId('btnSearch')?.addEventListener('click', () => this.handleSearch());
         byId('btnShowCreate')?.addEventListener('click', () => {
             byId('createUserForm').reset();
@@ -30,33 +43,61 @@ class UsersPage {
                 this.handleStatusToggle(toggleBtn.dataset.userId, toggleBtn.dataset.active === 'true');
             }
         });
+
+        // Pagination Events
+        this.prevPageButton?.addEventListener("click", () => {
+            if (this.currentPage > 0) {
+                this.currentPage--;
+                this.fetchAndRenderUsers(this.currentUrl, false);
+            }
+        });
+
+        this.nextPageButton?.addEventListener("click", () => {
+            if (this.currentPage < this.totalPages - 1) {
+                this.currentPage++;
+                this.fetchAndRenderUsers(this.currentUrl, false);
+            }
+        });
     }
 
-    async fetchAndRenderUsers(url = '/api/users') {
+    async fetchAndRenderUsers(url = '/api/users', resetPage = true) {
+        if (resetPage) this.currentPage = 0;
+        this.currentUrl = url;
+
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = `${url}${separator}page=${this.currentPage}&size=${this.pageSize}`;
+
         try {
-            const response = await api.get(url);
+            const response = await api.get(finalUrl);
             if (!response.ok) {
                 await api.showError(response, 'Failed to fetch users');
                 return;
             }
-            
-            let users = await response.json();
-            
-            // Normalize single search result into array
-            if (!Array.isArray(users)) {
-                users = [users];
-            }
 
-            this.renderUsers(users);
+            const data = await response.json();
+
+            // Check if it's a Page object or a single User object (from search)
+            if (data && data.content !== undefined) {
+                this.renderUsers(data.content);
+                this.updatePagination(data);
+            } else if (data) {
+                // Single user from search
+                this.renderUsers([data]);
+                this.paginationControls.style.display = 'none';
+            } else {
+                this.renderUsers([]);
+                this.paginationControls.style.display = 'none';
+            }
         } catch (error) {
             // Network errors handled by api.js
             this.userListBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Failed to load users.</td></tr>';
+            this.paginationControls.style.display = 'none';
         }
     }
 
     renderUsers(users) {
         this.userListBody.innerHTML = '';
-        
+
         if (!users || users.length === 0) {
             this.userListBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No users found.</td></tr>';
             return;
@@ -72,7 +113,7 @@ class UsersPage {
                 <td><span class="badge ${user.active ? 'bg-success' : 'bg-secondary'}">${user.active ? 'Active' : 'Inactive'}</span></td>
                 <td>
                     <a href="/users/${user.id}" class="btn btn-sm btn-outline-primary">Details</a>
-                    <button class="btn btn-sm ${user.active ? 'btn-outline-danger' : 'btn-outline-success'} btn-toggle-active" 
+                    <button class="btn btn-sm ${user.active ? 'btn-outline-danger' : 'btn-outline-success'} btn-toggle-active"
                             data-user-id="${user.id}" data-active="${user.active}">
                         ${user.active ? 'Deactivate' : 'Activate'}
                     </button>
@@ -81,6 +122,15 @@ class UsersPage {
             fragment.appendChild(tr);
         });
         this.userListBody.appendChild(fragment);
+    }
+
+    updatePagination(pageData) {
+        this.totalPages = pageData.totalPages;
+        this.currentPage = pageData.number;
+        this.pageInfoSpan.innerText = `Page ${this.currentPage + 1} of ${this.totalPages}`;
+        this.prevPageButton.disabled = (this.currentPage === 0);
+        this.nextPageButton.disabled = (this.currentPage >= this.totalPages - 1);
+        this.paginationControls.style.display = (this.totalPages > 1) ? 'flex' : 'none';
     }
 
     handleSearch() {
@@ -119,7 +169,7 @@ class UsersPage {
                 const response = isActive ? await usersApi.deactivate(userId) : await usersApi.activate(userId);
                 if (response.ok) {
                     await modal.alert(`User ${action}d successfully!`);
-                    this.fetchAndRenderUsers();
+                    this.fetchAndRenderUsers(this.currentUrl, false);
                 } else {
                     await api.showError(response, `Operation failed.`);
                 }
