@@ -88,6 +88,30 @@
         </div>
     </div>
 
+    <!-- Failed Mail Sidebar -->
+    <div th:if="${type == 'failed_mails'}">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Mail Filters</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="filterEmail" class="form-label">To Email</label>
+                    <input type="text" id="filterEmail" class="form-control" placeholder="Email...">
+                </div>
+                <div class="mb-3">
+                    <label for="startDate" class="form-label">From Date</label>
+                    <input type="datetime-local" id="startDate" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="endDate" class="form-label">To Date</label>
+                    <input type="datetime-local" id="endDate" class="form-control">
+                </div>
+                <button id="btnApplyMailFilter" class="btn btn-primary w-100">Filter Mails</button>
+            </div>
+        </div>
+    </div>
+
     <!-- User Profile Sidebar -->
     <div th:if="${type == 'user_profile'}">
         <div class="card shadow-sm mb-4">

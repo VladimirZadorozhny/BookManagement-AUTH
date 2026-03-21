@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: layout(~{::title}, ~{::section}, 'wide-container')}"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Failed Mails - Admin Management</title>
+</head>
+<body>
+<section sec:authorize="hasRole('ADMIN')">
+    <h1 class="mb-4">Failed Mail Delivery Log</h1>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Failed Attempts</h5>
+            <span class="badge bg-secondary" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>To Email</th>
+                        <th>Subject</th>
+                        <th>Attempts</th>
+                        <th>Created</th>
+                        <th>Last Attempt</th>
+                        <th>Error</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="mail-list-body">
+                    <tr>
+                        <td class="text-center py-5 text-muted" colspan="7">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-center align-items-center" id="pagination-controls"
+             style="display: none;">
+            <button class="btn btn-outline-secondary btn-sm" id="prev-page">Previous</button>
+            <span class="mx-3 text-muted" id="page-info"></span>
+            <button class="btn btn-outline-secondary btn-sm" id="next-page">Next</button>
+        </div>
+    </div>
+
+    <!-- Page Specific Scripts -->
+    <script th:src="@{/js/api/failedMailApi.js}"></script>
+    <script th:src="@{/js/pages/failed-mails.js}"></script>
+</section>
+</body>
+</html>

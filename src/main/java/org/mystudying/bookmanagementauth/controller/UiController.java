@@ -105,6 +105,14 @@ public class UiController {
         return "users";
     }
 
+    @GetMapping("/failed-mails")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String failedMails(Model model) {
+        model.addAttribute("showSidebar", true);
+        model.addAttribute("sidebarType", "failed_mails");
+        return "failed-mails";
+    }
+
     @GetMapping("/reset-password")
     public String resetPassword(@RequestParam("token") String token, Model model) {
         model.addAttribute("token", token);

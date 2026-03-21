@@ -1,13 +1,17 @@
 package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.mystudying.bookmanagementauth.domain.FailedMailLog;
+import org.mystudying.bookmanagementauth.dto.FailedMailLogDto;
 import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/failed-mails")
@@ -23,8 +27,12 @@ public class FailedMailController {
     }
 
     @GetMapping
-    public Page<FailedMailLog> getFailedMails(Pageable pageable) {
-        return failedMailService.findAll(pageable);
+    public Page<FailedMailLogDto> getFailedMails(
+            @RequestParam Optional<String> toEmail,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<OffsetDateTime> start,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<OffsetDateTime> end,
+            Pageable pageable) {
+        return failedMailService.findAll(toEmail.orElse(null), start.orElse(null), end.orElse(null), pageable);
     }
 
     @PostMapping("/{id}/retry")
