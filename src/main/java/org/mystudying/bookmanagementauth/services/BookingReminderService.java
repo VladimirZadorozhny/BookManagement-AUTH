@@ -3,6 +3,7 @@ package org.mystudying.bookmanagementauth.services;
 import org.mystudying.bookmanagementauth.domain.Booking;
 import org.mystudying.bookmanagementauth.domain.ReminderType;
 import org.mystudying.bookmanagementauth.events.BookingReminderEvent;
+import org.mystudying.bookmanagementauth.exceptions.NonRetryableMailException;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ public class BookingReminderService {
     @Transactional(readOnly = true)
     public void processReminder(Long bookingId, ReminderType type) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+                .orElseThrow(() -> new NonRetryableMailException("Booking not found: " + bookingId));
 
         log.debug("Publishing {} reminder for booking {}", type, bookingId);
 

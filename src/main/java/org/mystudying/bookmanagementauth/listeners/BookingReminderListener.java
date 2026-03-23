@@ -1,10 +1,9 @@
 package org.mystudying.bookmanagementauth.listeners;
 
-import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.events.BookingReminderEvent;
+import org.mystudying.bookmanagementauth.exceptions.RetryableMailException;
 import org.mystudying.bookmanagementauth.services.ReminderProcessingService;
 import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
-import org.mystudying.bookmanagementauth.services.mail.MailTemplateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.retry.annotation.Backoff;
@@ -19,12 +18,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class BookingReminderListener {
 
     private static final Logger log = LoggerFactory.getLogger(BookingReminderListener.class);
-    private final MailTemplateService mailTemplateService;
+
     private final FailedMailService failedMailService;
     private final ReminderProcessingService reminderProcessingService;
 
-    public BookingReminderListener(MailTemplateService mailTemplateService, FailedMailService failedMailService, ReminderProcessingService reminderProcessingService) {
-        this.mailTemplateService = mailTemplateService;
+    public BookingReminderListener(FailedMailService failedMailService, ReminderProcessingService reminderProcessingService) {
         this.failedMailService = failedMailService;
         this.reminderProcessingService = reminderProcessingService;
     }
@@ -32,40 +30,43 @@ public class BookingReminderListener {
     @Async("mailExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Retryable(
-            retryFor = MessagingException.class,
+            retryFor = RetryableMailException.class,
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000)
     )
-    public void handleBookingReminder(BookingReminderEvent event) throws MessagingException {
+    public void handleBookingReminder(BookingReminderEvent event) {
         reminderProcessingService.processReminder(event);
     }
 
     @Recover
-    public void recover(MessagingException e, BookingReminderEvent event) {
+    public void recover(Exception e, BookingReminderEvent event) {
         log.error("Failed to send booking reminder email of type {} to {} after multiple retries: {}",
                 event.reminderType(), event.email(), e.getMessage());
         failedMailService.logFailedMail(
                 event.email(),
-                getSubject(event),
-                buildBody(event),
-                e.getMessage()
+                reminderProcessingService.getSubject(event),
+                reminderProcessingService.buildBody(event),
+                extractErrorMessage(e)
         );
     }
 
-    private String getSubject(BookingReminderEvent event) {
-        switch (event.reminderType()) {
-            case THREE_DAYS_LEFT:
-                return "Reminder: Your book '" + event.bookTitle() + "' is due soon!";
-            case DUE_TODAY:
-                return "Reminder: Your book '" + event.bookTitle() + "' is due today!";
-            case OVERDUE:
-                return "Action Required: Your book '" + event.bookTitle() + "' is overdue!";
-            default:
-                return "Library Notification";
-        }
-    }
+    private String extractErrorMessage(Exception e) {
+        StringBuilder message = new StringBuilder();
 
-    private String buildBody(BookingReminderEvent event) {
-        return mailTemplateService.buildReminderMail(event.userName(), event.bookTitle(), event.dueDate(), event.reminderType());
+        message.append(e.getClass().getSimpleName())
+                .append(": ")
+                .append(e.getMessage());
+
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            message.append(" | Caused by: ")
+                    .append(cause.getClass().getSimpleName())
+                    .append(": ")
+                    .append(cause.getMessage());
+            cause = cause.getCause();
+        }
+
+        return message.toString();
+
     }
 }

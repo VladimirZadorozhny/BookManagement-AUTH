@@ -1,6 +1,5 @@
 package org.mystudying.bookmanagementauth.services.mail;
 
-import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.domain.FailedMailLog;
 import org.mystudying.bookmanagementauth.dto.FailedMailLogDto;
 import org.mystudying.bookmanagementauth.repositories.FailedMailLogRepository;
@@ -8,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.mail.MailSendException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +57,7 @@ public class FailedMailService {
             failedMailLogRepository.deleteById(id);
             log.info("Retry successful. Log entry deleted.");
             return true;
-        } catch (MailSendException | MessagingException e) {
+        } catch (Exception e) {
             log.error("Retry failed for mail to {}: {}", logEntry.getToEmail(), e.getMessage());
             logEntry.setAttemptCount(logEntry.getAttemptCount() + 1);
             logEntry.setLastAttemptAt(OffsetDateTime.now());

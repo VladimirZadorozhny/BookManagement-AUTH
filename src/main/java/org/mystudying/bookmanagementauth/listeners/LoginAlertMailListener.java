@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.listeners;
 
-import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.events.LoginSuccessEvent;
+import org.mystudying.bookmanagementauth.exceptions.RetryableMailException;
 import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.services.mail.MailTemplateService;
@@ -15,43 +15,43 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 
 @Component
-public class LoginAlertMailListener {
+public class LoginAlertMailListener extends AbstractMailListener<LoginSuccessEvent> {
 
     private static final Logger log = LoggerFactory.getLogger(LoginAlertMailListener.class);
-    private final MailService mailService;
+
     private final MailTemplateService mailTemplateService;
-    private final FailedMailService failedMailService;
+
 
     public LoginAlertMailListener(MailService mailService, MailTemplateService mailTemplateService, FailedMailService failedMailService) {
-        this.mailService = mailService;
+        super(mailService, failedMailService);
         this.mailTemplateService = mailTemplateService;
-        this.failedMailService = failedMailService;
+
     }
 
     @Async("mailExecutor")
     @EventListener
     @Retryable(
-            retryFor = MessagingException.class,
+            retryFor = RetryableMailException.class,
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000)
     )
-    public void handleLoginAlert(LoginSuccessEvent event) throws MessagingException {
+    public void handle(LoginSuccessEvent event) {
         log.info("Sending login alert email to: {}", event.email());
         String subject = getSubject();
         String body = buildBody(event);
-        
-        mailService.send(event.email(), subject, body);
+
+        sendMail(event.email(), subject, body);
         log.info("Login alert email sent to: {}", event.email());
     }
 
     @Recover
-    public void recover(MessagingException e, LoginSuccessEvent event) {
+    public void recover(Exception e, LoginSuccessEvent event) {
         log.error("Failed to send login alert email to {} after multiple retries: {}", event.email(), e.getMessage());
-        failedMailService.logFailedMail(
+        logFailure(
                 event.email(),
                 getSubject(),
                 buildBody(event),
-                e.getMessage()
+                e
         );
     }
 

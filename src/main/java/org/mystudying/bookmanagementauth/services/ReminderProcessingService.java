@@ -1,6 +1,5 @@
 package org.mystudying.bookmanagementauth.services;
 
-import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.domain.BookingReminderLog;
 import org.mystudying.bookmanagementauth.events.BookingReminderEvent;
 import org.mystudying.bookmanagementauth.repositories.BookingReminderLogRepository;
@@ -31,7 +30,7 @@ public class ReminderProcessingService {
 
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processReminder(BookingReminderEvent event) throws MessagingException {
+    public void processReminder(BookingReminderEvent event) {
         // 1. Check if already sent (Idempotency check)
         Optional<BookingReminderLog> existing = bookingReminderLogRepository.findForUpdate(event.bookingId(), event.reminderType());
         if (existing.isPresent()) {
@@ -56,7 +55,7 @@ public class ReminderProcessingService {
         }
     }
 
-    private String getSubject(BookingReminderEvent event) {
+    public String getSubject(BookingReminderEvent event) {
         switch (event.reminderType()) {
             case THREE_DAYS_LEFT:
                 return "Reminder: Your book '" + event.bookTitle() + "' is due soon!";
@@ -69,7 +68,7 @@ public class ReminderProcessingService {
         }
     }
 
-    private String buildBody(BookingReminderEvent event) {
+    public String buildBody(BookingReminderEvent event) {
         return mailTemplateService.buildReminderMail(event.userName(), event.bookTitle(), event.dueDate(), event.reminderType());
     }
 }

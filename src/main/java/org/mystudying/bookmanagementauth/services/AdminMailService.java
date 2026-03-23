@@ -3,7 +3,7 @@ package org.mystudying.bookmanagementauth.services;
 import org.mystudying.bookmanagementauth.domain.Booking;
 import org.mystudying.bookmanagementauth.domain.User;
 import org.mystudying.bookmanagementauth.events.AdminUserMailRequestedEvent;
-import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
+import org.mystudying.bookmanagementauth.exceptions.NonRetryableMailException;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
 import org.mystudying.bookmanagementauth.repositories.UserRepository;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class AdminMailService {
 
     public void sendMailToUser(Long userId, String subject, String body) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+                .orElseThrow(() -> new NonRetryableMailException("User not found with ID: " + userId));
         publishAdminUserMailEvent(user.getId(), user.getEmail(), subject, body);
     }
 

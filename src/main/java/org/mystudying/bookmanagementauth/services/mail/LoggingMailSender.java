@@ -1,6 +1,5 @@
 package org.mystudying.bookmanagementauth.services.mail;
 
-import jakarta.mail.MessagingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -13,7 +12,7 @@ public class LoggingMailSender implements MailService {
     private static final Logger log = LoggerFactory.getLogger(LoggingMailSender.class);
 
     @Override
-    public void send(String to, String subject, String body) throws MessagingException {
+    public void send(String to, String subject, String body) {
         log.info("--- DEV Mail Sender ---");
         log.info("To: {}", to);
         log.info("Subject: {}", subject);

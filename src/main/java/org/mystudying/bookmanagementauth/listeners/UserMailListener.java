@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.listeners;
 
-import jakarta.mail.MessagingException;
 import org.mystudying.bookmanagementauth.events.UserRegisteredEvent;
+import org.mystudying.bookmanagementauth.exceptions.RetryableMailException;
 import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.services.mail.MailTemplateService;
@@ -17,46 +17,46 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
-public class UserMailListener {
+public class UserMailListener extends AbstractMailListener<UserRegisteredEvent> {
 
     private static final Logger log = LoggerFactory.getLogger(UserMailListener.class);
-    private final MailService mailService;
+
     private final MailTemplateService mailTemplateService;
-    private final FailedMailService failedMailService;
+
 
     @Value("${app.baseUrl:http://localhost:8080}")
     private String baseUrl;
 
     public UserMailListener(MailService mailService, MailTemplateService mailTemplateService, FailedMailService failedMailService) {
-        this.mailService = mailService;
+        super(mailService, failedMailService);
         this.mailTemplateService = mailTemplateService;
-        this.failedMailService = failedMailService;
+
     }
 
     @Async("mailExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Retryable(
-            retryFor = MessagingException.class,
+            retryFor = RetryableMailException.class,
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000)
     )
-    public void handleUserRegistered(UserRegisteredEvent event) throws MessagingException {
+    public void handle(UserRegisteredEvent event) {
         log.info("Attempting to send registration email to: {}", event.email());
         String subject = getSubject();
         String body = buildBody(event);
 
-        mailService.send(event.email(), subject, body);
+        sendMail(event.email(), subject, body);
         log.info("Registration email sent to: {}", event.email());
     }
 
     @Recover
-    public void recover(MessagingException e, UserRegisteredEvent event) {
+    public void recover(Exception e, UserRegisteredEvent event) {
         log.error("Failed to send registration email to {} after multiple retries: {}", event.email(), e.getMessage());
-        failedMailService.logFailedMail(
+        logFailure(
                 event.email(),
                 getSubject(),
                 buildBody(event),
-                e.getMessage()
+                e
         );
     }
 

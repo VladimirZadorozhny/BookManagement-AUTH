@@ -1,6 +1,7 @@
 package org.mystudying.bookmanagementauth.scheduling;
 
 import org.mystudying.bookmanagementauth.domain.ReminderType;
+import org.mystudying.bookmanagementauth.exceptions.NonRetryableMailException;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
 import org.mystudying.bookmanagementauth.services.BookingReminderService;
 import org.slf4j.Logger;
@@ -37,7 +38,15 @@ public class BookingReminderScheduler {
         OffsetDateTime threeDaysLater = today.plusDays(3).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
         try {
             List<Long> dueSoonIds = bookingRepository.findBookingIdsDueInDays(startOfDay, threeDaysLater);
-            dueSoonIds.forEach(id -> reminderService.processReminder(id, ReminderType.THREE_DAYS_LEFT));
+            for (Long id : dueSoonIds) {
+                try {
+                    reminderService.processReminder(id, ReminderType.THREE_DAYS_LEFT);
+                } catch (NonRetryableMailException e) {
+                    log.warn("Skipping missing booking {}", id);
+                } catch (Exception e) {
+                    log.error("Unexpecting error for booking {}", id, e);
+                }
+            }
         } catch (Exception e) {
             log.error("Failed to process due-soon reminders", e);
         }
@@ -45,7 +54,15 @@ public class BookingReminderScheduler {
         // Reminders for books due today
         try {
             List<Long> dueTodayIds = bookingRepository.findBookingIdsDueToday(startOfDay, endOfDay);
-            dueTodayIds.forEach(id -> reminderService.processReminder(id, ReminderType.DUE_TODAY));
+            for (Long id : dueTodayIds) {
+                try {
+                    reminderService.processReminder(id, ReminderType.DUE_TODAY);
+                } catch (NonRetryableMailException e) {
+                    log.warn("Skipping missing booking {}", id);
+                } catch (Exception e) {
+                    log.error("Unexpecting error for booking {}", id, e);
+                }
+            }
         } catch (Exception e) {
             log.error("Failed to process due-today reminders", e);
         }
@@ -55,7 +72,15 @@ public class BookingReminderScheduler {
         OffsetDateTime oneDayAgoEnd = today.minusDays(1).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
         try {
             List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgoStart, oneDayAgoEnd);
-            overdueIds.forEach(id -> reminderService.processReminder(id, ReminderType.OVERDUE));
+            for (Long id : overdueIds) {
+                try {
+                    reminderService.processReminder(id, ReminderType.OVERDUE);
+                } catch (NonRetryableMailException e) {
+                    log.warn("Skipping missing booking {}", id);
+                } catch (Exception e) {
+                    log.error("Unexpecting error for booking {}", id, e);
+                }
+            }
         } catch (Exception e) {
             log.error("Failed to process overdue reminders", e);
         }
