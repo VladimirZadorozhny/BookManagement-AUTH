@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${headline}">Book Reminder</title>
+</head>
+<body>
+    <p>Dear <span th:text="${userName}">User</span>,</p>
+
+    <h3 th:text="${headline}">Book Reminder</h3>
+
+    <p>
+        <span th:text="${messagePrefix}">Message prefix</span>
+        <strong>'<span th:text="${bookTitle}">Book Title</span>'</strong>
+        <span th:text="${messageSuffix}">message suffix</span>
+        <span th:text="${dueDate}">[Due Date]</span>.
+    </p>
+
+    <p th:text="${ctaText}">Call to action</p>
+
+    <p>Thank you!</p>
+</body>
+</html>
