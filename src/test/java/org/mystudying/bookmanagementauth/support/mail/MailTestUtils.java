@@ -87,4 +87,18 @@ public class MailTestUtils {
         }
         return result.toString();
     }
+
+    public long countMessagesForRecipient(GreenMail greenMail, String toEmail) {
+        return Arrays.stream(greenMail.getReceivedMessages())
+                .filter(m -> {
+                    try {
+                        return Arrays.stream(m.getAllRecipients())
+                                .anyMatch(r -> r.toString().replaceAll("[<>]", "")
+                                        .equalsIgnoreCase(toEmail));
+                    } catch (MessagingException e) {
+                        return false;
+                    }
+                })
+                .count();
+    }
 }
