@@ -9,7 +9,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
 import org.mystudying.bookmanagementauth.dto.UserDto;
+import org.mystudying.bookmanagementauth.domain.ReminderType;
+import org.mystudying.bookmanagementauth.events.BookingReminderEvent;
 import org.mystudying.bookmanagementauth.services.AdminMailService;
+import org.mystudying.bookmanagementauth.services.ReminderProcessingService;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.time.LocalDate;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,6 +39,9 @@ public class MailIntegrationTest extends AbstractSecurityIntegrationTest {
 
     @Autowired
     private AdminMailService adminMailService;
+
+    @Autowired
+    private ReminderProcessingService reminderProcessingService;
 
     @Value("${app.baseUrl:http://localhost:8080}")
     private String baseUrl;
@@ -146,5 +153,69 @@ public class MailIntegrationTest extends AbstractSecurityIntegrationTest {
         });
         testDataCleanup.deleteUserCascade(email);
 
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldSendReminderEmailsForAllTypes() throws Exception {
+        String email = "mail.test" + UUID.randomUUID() + "@example.com";
+        String userName = "Mail User";
+        String bookTitle = "Reminder Book";
+        LocalDate dueDate = LocalDate.now().plusDays(3);
+        long bookingId = Math.abs(UUID.randomUUID().getMostSignificantBits());
+
+        transactionTemplate.execute(status -> {
+            reminderProcessingService.processReminder(new BookingReminderEvent(
+                    bookingId,
+                    userName,
+                    email,
+                    bookTitle,
+                    dueDate,
+                    ReminderType.THREE_DAYS_LEFT
+            ));
+            reminderProcessingService.processReminder(new BookingReminderEvent(
+                    bookingId,
+                    userName,
+                    email,
+                    bookTitle,
+                    dueDate,
+                    ReminderType.DUE_TODAY
+            ));
+            reminderProcessingService.processReminder(new BookingReminderEvent(
+                    bookingId,
+                    userName,
+                    email,
+                    bookTitle,
+                    dueDate,
+                    ReminderType.OVERDUE
+            ));
+            return null;
+        });
+
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            MimeMessage message = mailTestUtils.verifyEmailReceived(greenMail, email,
+                    "Reminder: Your book '" + bookTitle + "' is due soon!");
+            String body = mailTestUtils.getTextFromMessage(message);
+            assertTrue(body.contains("Book Due Soon"));
+            assertTrue(body.contains("Please return it on time to avoid any late fees."));
+        });
+
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            MimeMessage message = mailTestUtils.verifyEmailReceived(greenMail, email,
+                    "Reminder: Your book '" + bookTitle + "' is due today!");
+            String body = mailTestUtils.getTextFromMessage(message);
+            assertTrue(body.contains("Book Due Today"));
+            assertTrue(body.contains("Kindly return it as soon as possible."));
+        });
+
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+            MimeMessage message = mailTestUtils.verifyEmailReceived(greenMail, email,
+                    "Action Required: Your book '" + bookTitle + "' is overdue!");
+            String body = mailTestUtils.getTextFromMessage(message);
+            assertTrue(body.contains("Book Overdue"));
+            assertTrue(body.contains("Please return the book immediately to minimize any accumulated fines."));
+        });
+
+        testDataCleanup.deleteRemindersByBookingId(bookingId);
     }
 }

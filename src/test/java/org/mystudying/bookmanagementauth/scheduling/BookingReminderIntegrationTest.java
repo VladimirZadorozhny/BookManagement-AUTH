@@ -17,6 +17,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,7 +69,7 @@ public class BookingReminderIntegrationTest extends AbstractSecurityIntegrationT
                 "Test User 1",
                 TestFixtures.USER_1_EMAIL,
                 TestFixtures.BOOK_1_TITLE,
-                OffsetDateTime.now(),
+                LocalDate.now(),
                 ReminderType.DUE_TODAY
         );
 
