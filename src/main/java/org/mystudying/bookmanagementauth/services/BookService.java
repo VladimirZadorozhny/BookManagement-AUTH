@@ -3,12 +3,15 @@ package org.mystudying.bookmanagementauth.services;
 import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.domain.Genre;
 import org.mystudying.bookmanagementauth.dto.BookDetailDto;
+import org.mystudying.bookmanagementauth.dto.BookDto;
+import org.mystudying.bookmanagementauth.dto.BookSearchCriteria;
 import org.mystudying.bookmanagementauth.dto.CreateBookRequestDto;
 import org.mystudying.bookmanagementauth.dto.UpdateBookRequestDto;
 import org.mystudying.bookmanagementauth.exceptions.AuthorNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.BookHasBookingsException;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
+import org.mystudying.bookmanagementauth.mappers.BookMapper;
 import org.mystudying.bookmanagementauth.repositories.AuthorRepository;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
@@ -30,65 +33,52 @@ public class BookService {
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
     private final GenreRepository genreRepository;
+    private final BookMapper bookMapper;
 
-    public BookService(BookRepository bookRepository, AuthorRepository authorRepository, GenreRepository genreRepository) {
+    public BookService(BookRepository bookRepository,
+                       AuthorRepository authorRepository,
+                       GenreRepository genreRepository,
+                       BookMapper bookMapper) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
         this.genreRepository = genreRepository;
+        this.bookMapper = bookMapper;
     }
 
-    public List<Book> findAll() {
-        return bookRepository.findAll(Sort.by("title"));
+    public List<BookDto> findAll() {
+        return bookRepository.findAll(Sort.by("title")).stream()
+                .map(bookMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-    public Page<Book> findAll(Pageable pageable) {
-        return bookRepository.findAll(pageable);
+    public Page<BookDto> findAll(Pageable pageable) {
+        return bookRepository.findAll(pageable).map(bookMapper::toDto);
     }
 
-    public List<Book> findByYear(int year) {
-        return bookRepository.findByYear(year);
+    public Page<BookDto> findByCriteria(BookSearchCriteria criteria, Pageable pageable) {
+        if (criteria.available() != null) {
+            return bookRepository.findByAvailability(criteria.available(), pageable).map(bookMapper::toDto);
+        }
+        if (criteria.genreId() != null) {
+            return bookRepository.findByGenres_Id(criteria.genreId(), pageable).map(bookMapper::toDto);
+        }
+        if (criteria.year() != null) {
+            return bookRepository.findByYear(criteria.year(), pageable).map(bookMapper::toDto);
+        }
+        if (criteria.title() != null) {
+            return bookRepository.findByTitleContaining(criteria.title(), pageable).map(bookMapper::toDto);
+        }
+        if (criteria.authorPartName() != null) {
+            return bookRepository.findByAuthorNameContaining(criteria.authorPartName(), pageable).map(bookMapper::toDto);
+        }
+        if (criteria.authorName() != null) {
+            return bookRepository.findByAuthorName(criteria.authorName(), pageable).map(bookMapper::toDto);
+        }
+        return findAll(pageable);
     }
 
-    public Page<Book> findByYear(int year, Pageable pageable) {
-        return bookRepository.findByYear(year, pageable);
-    }
-
-    public List<Book> findByAuthorName(String authorName) {
-        return bookRepository.findByAuthorName(authorName);
-    }
-
-    public Page<Book> findByAuthorName(String authorName, Pageable pageable) {
-        return bookRepository.findByAuthorName(authorName, pageable);
-    }
-
-    public List<Book> findByAuthorId(long authorId) {
-        authorRepository.findById(authorId).orElseThrow(() -> new AuthorNotFoundException(authorId));
-        return bookRepository.findByAuthor_Id(authorId);
-    }
-
-    public Page<Book> findByAuthorId(long authorId, Pageable pageable) {
-        authorRepository.findById(authorId).orElseThrow(() -> new AuthorNotFoundException(authorId));
-        return bookRepository.findByAuthor_Id(authorId, pageable);
-    }
-
-    public List<Book> findByGenreId(long genreId) {
-        return bookRepository.findByGenres_Id(genreId);
-    }
-
-    public Page<Book> findByGenreId(long genreId, Pageable pageable) {
-        return bookRepository.findByGenres_Id(genreId, pageable);
-    }
-
-    public List<Book> findByAvailability(boolean available) {
-        return bookRepository.findByAvailability(available);
-    }
-
-    public Page<Book> findByAvailability(boolean available, Pageable pageable) {
-        return bookRepository.findByAvailability(available, pageable);
-    }
-
-    public Optional<Book> findById(long id) {
-        return bookRepository.findById(id);
+    public Optional<BookDto> findById(long id) {
+        return bookRepository.findById(id).map(bookMapper::toDto);
     }
 
     public Optional<BookDetailDto> findBookDetailsById(long id) {
@@ -99,28 +89,12 @@ public class BookService {
                 });
     }
 
-    public Optional<Book> findByTitle(String title) {
-        return bookRepository.findByTitle(title);
-    }
-
-    public List<Book> findByTitleContaining(String title) {
-        return bookRepository.findByTitleContainingOrderByTitle(title);
-    }
-
-    public Page<Book> findByTitleContaining(String title, Pageable pageable) {
-        return bookRepository.findByTitleContaining(title, pageable);
-    }
-
-    public List<Book> findByAuthorNameContaining(String authorName) {
-        return bookRepository.findByAuthorNameContaining(authorName);
-    }
-
-    public Page<Book> findByAuthorNameContaining(String authorName, Pageable pageable) {
-        return bookRepository.findByAuthorNameContaining(authorName, pageable);
+    public Optional<BookDto> findByTitle(String title) {
+        return bookRepository.findByTitle(title).map(bookMapper::toDto);
     }
 
     @Transactional
-    public Book save(CreateBookRequestDto createBookRequestDto) {
+    public BookDto save(CreateBookRequestDto createBookRequestDto) {
         // Validation of Author existence
         var author = authorRepository.findById(createBookRequestDto.authorId())
                 .orElseThrow(() -> new AuthorNotFoundException(createBookRequestDto.authorId()));
@@ -149,11 +123,11 @@ public class BookService {
                 author, createBookRequestDto.available());
         book.setGenres(new HashSet<>(genres));
 
-        return bookRepository.save(book);
+        return bookMapper.toDto(bookRepository.save(book));
     }
 
     @Transactional
-    public Book update(long id, UpdateBookRequestDto updateBookRequestDto) {
+    public BookDto update(long id, UpdateBookRequestDto updateBookRequestDto) {
         var book = bookRepository.findById(id).orElseThrow(() -> new BookNotFoundException(id));
         var author = authorRepository.findById(updateBookRequestDto.authorId()).orElseThrow(() ->
                 new AuthorNotFoundException(updateBookRequestDto.authorId()));
@@ -182,7 +156,7 @@ public class BookService {
         book.setAuthor(author);
         book.setGenres(new HashSet<>(genres));
 
-        return book;
+        return bookMapper.toDto(book);
 
     }
 

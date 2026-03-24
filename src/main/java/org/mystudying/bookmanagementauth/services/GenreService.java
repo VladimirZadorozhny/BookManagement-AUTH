@@ -1,9 +1,14 @@
 package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Genre;
-import org.mystudying.bookmanagementauth.dto.*;
+import org.mystudying.bookmanagementauth.dto.BookDto;
+import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
+import org.mystudying.bookmanagementauth.dto.GenreDto;
+import org.mystudying.bookmanagementauth.dto.GenreWithBooksDto;
 import org.mystudying.bookmanagementauth.exceptions.GenreHasBooksException;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
+import org.mystudying.bookmanagementauth.mappers.BookMapper;
+import org.mystudying.bookmanagementauth.mappers.GenreMapper;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
 import org.springframework.data.domain.Page;
@@ -22,26 +27,33 @@ public class GenreService {
 
     private final GenreRepository genreRepository;
     private final BookRepository bookRepository;
+    private final GenreMapper genreMapper;
+    private final BookMapper bookMapper;
 
-    public GenreService(GenreRepository genreRepository, BookRepository bookRepository) {
+    public GenreService(GenreRepository genreRepository,
+                        BookRepository bookRepository,
+                        GenreMapper genreMapper,
+                        BookMapper bookMapper) {
         this.genreRepository = genreRepository;
         this.bookRepository = bookRepository;
+        this.genreMapper = genreMapper;
+        this.bookMapper = bookMapper;
     }
 
     public List<GenreDto> findAll() {
         return genreRepository.findAll(Sort.by("name")).stream()
-                .map(genre -> new GenreDto(genre.getId(), genre.getName()))
+                .map(genreMapper::toDto)
                 .toList();
     }
 
     public Page<GenreDto> findAll(Pageable pageable) {
-        return genreRepository.findAll(pageable).map(genre -> new GenreDto(genre.getId(), genre.getName()));
+        return genreRepository.findAll(pageable).map(genreMapper::toDto);
 
     }
 
     public Optional<GenreDto> findById(long id) {
         return genreRepository.findById(id)
-                .map(genre -> new GenreDto(genre.getId(), genre.getName()));
+                .map(genreMapper::toDto);
     }
 
     public List<BookDto> findBooksByGenre(String genreName) {
@@ -50,12 +62,7 @@ public class GenreService {
         }
         return bookRepository.findByGenres_NameIgnoreCase(genreName)
                 .stream()
-                .map(book -> new BookDto(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getYear(),
-                        book.getAvailable()
-                ))
+                .map(bookMapper::toDto)
                 .toList();
     }
 
@@ -64,12 +71,7 @@ public class GenreService {
             throw new GenreNotFoundException(genreName);
         }
         return bookRepository.findByGenres_NameIgnoreCase(genreName, pageable)
-                .map(book -> new BookDto(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getYear(),
-                        book.getAvailable()
-                ));
+                .map(bookMapper::toDto);
     }
 
 
@@ -96,12 +98,7 @@ public class GenreService {
                     List<BookDto> limitedBooks = genre.getBooks()
                             .stream()
                             .limit(5)
-                            .map(book -> new BookDto(
-                                    book.getId(),
-                                    book.getTitle(),
-                                    book.getYear(),
-                                    book.getAvailable()
-                            ))
+                            .map(bookMapper::toDto)
                             .toList();
 
                     long total = bookRepository.countBooksByGenreId(genre.getId());
@@ -119,7 +116,7 @@ public class GenreService {
         genreRepository.findById(id)
                 .orElseThrow(() -> new GenreNotFoundException(id));
         return bookRepository.findByGenres_Id(id).stream()
-                .map(book -> new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable()))
+                .map(bookMapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -127,7 +124,7 @@ public class GenreService {
     public GenreDto save(CreateGenreRequestDto requestDto) {
         Genre genre = new Genre(null, requestDto.name());
         Genre saved = genreRepository.save(genre);
-        return new GenreDto(saved.getId(), saved.getName());
+        return genreMapper.toDto(saved);
     }
 
     @Transactional
@@ -135,7 +132,7 @@ public class GenreService {
         Genre genre = genreRepository.findById(id)
                 .orElseThrow(() -> new GenreNotFoundException(id));
         genre.setName(requestDto.name());
-        return new GenreDto(genre.getId(), genre.getName());
+        return genreMapper.toDto(genre);
     }
 
     @Transactional

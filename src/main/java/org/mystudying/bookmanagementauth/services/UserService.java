@@ -58,6 +58,14 @@ public class UserService {
         return userRepository.findByEmail(email).map(this::toDto);
     }
 
+    public Optional<UserDto> findByNameOrEmail(String value) {
+        Optional<UserDto> user = findByName(value);
+        if (user.isEmpty()) {
+            user = findByEmail(value);
+        }
+        return user;
+    }
+
     @Transactional
     public UserDto save(CreateUserRequestDto createUserRequestDto) {
         try {

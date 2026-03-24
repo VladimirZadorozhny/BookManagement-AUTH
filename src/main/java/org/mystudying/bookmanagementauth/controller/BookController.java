@@ -2,7 +2,6 @@ package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.dto.*;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.services.BookService;
@@ -37,31 +36,20 @@ public class BookController {
                                      @RequestParam Optional<String> authorPartName,
                                      @RequestParam Optional<Long> genreId,
                                      @PageableDefault(size = 9) Pageable pageable) {
-        if (available.isPresent()) {
-            return bookService.findByAvailability(available.get(), pageable).map(this::toDto);
-        }
-        if (genreId.isPresent()) {
-            return bookService.findByGenreId(genreId.get(), pageable).map(this::toDto);
-        }
-        if (year.isPresent()) {
-            return bookService.findByYear(year.get(), pageable).map(this::toDto);
-        }
-        if (title.isPresent()) {
-            return bookService.findByTitleContaining(title.get(), pageable).map(this::toDto);
-        }
-        if (authorPartName.isPresent()) {
-            return bookService.findByAuthorNameContaining(authorPartName.get(), pageable).map(this::toDto);
-        }
-        if (authorName.isPresent()) {
-            return bookService.findByAuthorName(authorName.get(), pageable).map(this::toDto);
-        }
-        return bookService.findAll(pageable).map(this::toDto);
+        BookSearchCriteria criteria = new BookSearchCriteria(
+                available.orElse(null),
+                year.orElse(null),
+                authorName.orElse(null),
+                title.orElse(null),
+                authorPartName.orElse(null),
+                genreId.orElse(null)
+        );
+        return bookService.findByCriteria(criteria, pageable);
     }
 
     @GetMapping("/{id}")
     public BookDto getBookById(@PathVariable long id) {
         return bookService.findById(id)
-                .map(this::toDto)
                 .orElseThrow(() -> new BookNotFoundException(id));
     }
 
@@ -74,7 +62,6 @@ public class BookController {
     @GetMapping("/title/{title}")
     public BookDto getBookByTitle(@PathVariable String title) {
         return bookService.findByTitle(title)
-                .map(this::toDto)
                 .orElseThrow(() -> new BookNotFoundException(title));
     }
 
@@ -82,13 +69,13 @@ public class BookController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
     public BookDto createBook(@Valid @RequestBody CreateBookRequestDto bookDto) {
-        return toDto(bookService.save(bookDto));
+        return bookService.save(bookDto);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public BookDto updateBook(@PathVariable long id, @Valid @RequestBody UpdateBookRequestDto bookDto) {
-        return toDto(bookService.update(id, bookDto));
+        return bookService.update(id, bookDto);
     }
 
     @PostMapping("/{id}/inventory/replenish")
@@ -112,7 +99,4 @@ public class BookController {
         bookService.deleteById(id);
     }
 
-    private BookDto toDto(Book book) {
-        return new BookDto(book.getId(), book.getTitle(), book.getYear(), book.getAvailable());
-    }
 }

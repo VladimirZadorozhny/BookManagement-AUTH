@@ -14,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -45,11 +44,8 @@ public class UserController {
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
     public UserDto searchUser(@RequestParam String by) {
-        Optional<UserDto> user = userService.findByName(by);
-        if (user.isEmpty()) {
-            user = userService.findByEmail(by);
-        }
-        return user.orElseThrow(() -> new UserNotFoundException(by));
+        return userService.findByNameOrEmail(by)
+                .orElseThrow(() -> new UserNotFoundException(by));
     }
 
     @PostMapping
