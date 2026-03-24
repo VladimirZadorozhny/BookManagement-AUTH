@@ -10,7 +10,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -31,13 +30,13 @@ public class BookingReminderScheduler {
         log.info("Running scheduled booking reminder job.");
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
-        OffsetDateTime startOfDay = today.atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime endOfDay = today.atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        LocalDate threeDaysLater = today.plusDays(3);
+        LocalDate oneDayAgo = today.minusDays(1);
+
 
         // Reminders for books due in 3 days
-        OffsetDateTime threeDaysLater = today.plusDays(3).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
         try {
-            List<Long> dueSoonIds = bookingRepository.findBookingIdsDueInDays(startOfDay, threeDaysLater);
+            List<Long> dueSoonIds = bookingRepository.findBookingIdsDueInDays(today, threeDaysLater);
             for (Long id : dueSoonIds) {
                 try {
                     reminderService.processReminder(id, ReminderType.THREE_DAYS_LEFT);
@@ -53,7 +52,7 @@ public class BookingReminderScheduler {
 
         // Reminders for books due today
         try {
-            List<Long> dueTodayIds = bookingRepository.findBookingIdsDueToday(startOfDay, endOfDay);
+            List<Long> dueTodayIds = bookingRepository.findBookingIdsDueToday(today, today);
             for (Long id : dueTodayIds) {
                 try {
                     reminderService.processReminder(id, ReminderType.DUE_TODAY);
@@ -68,10 +67,9 @@ public class BookingReminderScheduler {
         }
 
         // Reminders for books 1 day overdue
-        OffsetDateTime oneDayAgoStart = today.minusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-        OffsetDateTime oneDayAgoEnd = today.minusDays(1).atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+
         try {
-            List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgoStart, oneDayAgoEnd);
+            List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgo, oneDayAgo);
             for (Long id : overdueIds) {
                 try {
                     reminderService.processReminder(id, ReminderType.OVERDUE);

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -24,7 +24,7 @@ public class MailTemplateService {
         return templateEngine.process("mail/registration", context);
     }
 
-    public String buildReminderMail(String userName, String bookTitle, OffsetDateTime dueDate, ReminderType reminderType) {
+    public String buildReminderMail(String userName, String bookTitle, LocalDate dueDate, ReminderType reminderType) {
         Context context = new Context();
         context.setVariable("userName", userName);
         context.setVariable("bookTitle", bookTitle);

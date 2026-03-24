@@ -83,13 +83,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findBookingsDueToday(@Param("startOfDay") OffsetDateTime startOfDay, @Param("endOfDay") OffsetDateTime endOfDay);
 
     @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt BETWEEN :now AND :threeDaysLater")
-    List<Long> findBookingIdsDueInDays(@Param("now") OffsetDateTime now, @Param("threeDaysLater") OffsetDateTime threeDaysLater);
+    List<Long> findBookingIdsDueInDays(@Param("now") LocalDate now, @Param("threeDaysLater") LocalDate threeDaysLater);
 
     @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt BETWEEN :startOfDay AND :endOfDay")
-    List<Long> findBookingIdsDueToday(@Param("startOfDay") OffsetDateTime startOfDay, @Param("endOfDay") OffsetDateTime endOfDay);
+    List<Long> findBookingIdsDueToday(@Param("startOfDay") LocalDate startOfDay, @Param("endOfDay") LocalDate endOfDay);
 
     @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt < :oneDayAgo AND b.dueAt > :twoDaysAgo")
-    List<Long> findBookingIdsOverdueByDays(@Param("oneDayAgo") OffsetDateTime oneDayAgo, @Param("twoDaysAgo") OffsetDateTime twoDaysAgo);
+    List<Long> findBookingIdsOverdueByDays(@Param("oneDayAgo") LocalDate oneDayAgo, @Param("twoDaysAgo") LocalDate twoDaysAgo);
 }
 
 

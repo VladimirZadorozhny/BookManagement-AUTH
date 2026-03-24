@@ -11,8 +11,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
-
 @Service
 public class BookingReminderService {
 
@@ -37,7 +35,7 @@ public class BookingReminderService {
                 booking.getUser().getName(),
                 booking.getUser().getEmail(),
                 booking.getBook().getTitle(),
-                booking.getDueAt().atStartOfDay().atOffset(ZoneOffset.UTC),
+                booking.getDueAt(),
                 type
         ));
     }
