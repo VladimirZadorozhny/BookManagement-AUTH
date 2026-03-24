@@ -1,6 +1,17 @@
 /**
  * Controller for the Admin Reports page.
  */
+function parseLocalDate(dateStr) {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+function formatLocalDate(dateStr, locale = "nl-BE") {
+    const date = parseLocalDate(dateStr);
+    return date ? date.toLocaleDateString(locale) : "-";
+}
+
 class ReportsPage {
     constructor() {
         this.reportTypeSelect = byId('reportType');
@@ -150,8 +161,8 @@ class ReportsPage {
                 <td>${userName || 'N/A'}</td>
                 <td>${userEmail || 'N/A'}</td>
                 <td>${bookTitle || 'N/A'}</td>
-                <td>${new Date(borrowedAt).toLocaleDateString("nl-BE")}</td>
-                <td>${returnedAt ? new Date(returnedAt).toLocaleDateString("nl-BE") : "-"}</td>
+                <td>${formatLocalDate(borrowedAt)}</td>
+                <td>${formatLocalDate(returnedAt)}</td>
                 <td class="${overdueClass}">${overdueDisplay}</td>
                 <td class="${fineClass}">${fineDisplay}</td>
                 <td class="${finePaidClass}">${finePaidText}</td>

@@ -1,6 +1,17 @@
 /**
  * Controller for the User Details / Profile page.
  */
+function parseLocalDate(dateStr) {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+function formatLocalDate(dateStr) {
+    const date = parseLocalDate(dateStr);
+    return date ? date.toLocaleDateString() : '-';
+}
+
 class UserDetailsPage {
     constructor() {
         const root = document.querySelector('section');
@@ -154,17 +165,19 @@ class UserDetailsPage {
             const isReturned = !!booking.returnedAt;
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const dueDate = new Date(booking.dueAt);
-            dueDate.setHours(0, 0, 0, 0);
-            const isOverdue = !isReturned && (dueDate < today);
-            const isNearDue = !isReturned && ((dueDate - today) / (1000 * 60 * 60 * 24) <= 3);
+            const dueDate = parseLocalDate(booking.dueAt);
+            if (dueDate) {
+                dueDate.setHours(0, 0, 0, 0);
+            }
+            const isOverdue = !isReturned && dueDate && (dueDate < today);
+            const isNearDue = !isReturned && dueDate && ((dueDate - today) / (1000 * 60 * 60 * 24) <= 3);
 
             let dueClass = "";
             if (isOverdue) dueClass = "status-overdue";
             else if (isNearDue) dueClass = "status-near-due";
 
             const fineDisplay = booking.fine ? `<span class="text-danger fw-bold">$${booking.fine.toFixed(2)}</span>` : '-';
-            const returnedDateDisplay = booking.returnedAt ? new Date(booking.returnedAt).toLocaleDateString() : '-';
+            const returnedDateDisplay = formatLocalDate(booking.returnedAt);
             
             let actionsHtml = '';
             if (!isReturned) {
@@ -175,8 +188,8 @@ class UserDetailsPage {
 
             tr.innerHTML = `
                 <td><a href="/books/${booking.bookId}">${booking.bookTitle}</a></td>
-                <td>${new Date(booking.borrowedAt).toLocaleDateString()}</td>
-                <td class="${dueClass}">${new Date(booking.dueAt).toLocaleDateString()}</td>
+                <td>${formatLocalDate(booking.borrowedAt)}</td>
+                <td class="${dueClass}">${formatLocalDate(booking.dueAt)}</td>
                 <td>${returnedDateDisplay}</td>
                 <td>${fineDisplay}</td>
                 <td>${actionsHtml}</td>

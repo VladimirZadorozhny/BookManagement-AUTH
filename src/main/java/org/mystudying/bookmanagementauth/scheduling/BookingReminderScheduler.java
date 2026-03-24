@@ -32,6 +32,7 @@ public class BookingReminderScheduler {
 
         LocalDate threeDaysLater = today.plusDays(3);
         LocalDate oneDayAgo = today.minusDays(1);
+        LocalDate twoDaysAgo = today.minusDays(2);
 
 
         // Reminders for books due in 3 days
@@ -69,7 +70,7 @@ public class BookingReminderScheduler {
         // Reminders for books 1 day overdue
 
         try {
-            List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgo, oneDayAgo);
+            List<Long> overdueIds = bookingRepository.findBookingIdsOverdueByDays(oneDayAgo, twoDaysAgo);
             for (Long id : overdueIds) {
                 try {
                     reminderService.processReminder(id, ReminderType.OVERDUE);

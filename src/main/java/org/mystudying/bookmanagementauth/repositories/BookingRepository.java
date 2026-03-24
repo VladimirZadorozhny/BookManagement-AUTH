@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,10 +76,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // --- New Reminder Queries ---
     @Query("SELECT b FROM Booking b JOIN FETCH b.user u JOIN FETCH b.book WHERE b.returnedAt IS NULL AND u.active = TRUE AND b.dueAt BETWEEN :now AND :threeDaysLater")
-    List<Booking> findBookingsDueInDays(@Param("now") OffsetDateTime now, @Param("threeDaysLater") OffsetDateTime threeDaysLater);
+    List<Booking> findBookingsDueInDays(@Param("now") LocalDate now, @Param("threeDaysLater") LocalDate threeDaysLater);
 
     @Query("SELECT b FROM Booking b JOIN FETCH b.user u JOIN FETCH b.book WHERE b.returnedAt IS NULL AND u.active = TRUE AND b.dueAt BETWEEN :startOfDay AND :endOfDay")
-    List<Booking> findBookingsDueToday(@Param("startOfDay") OffsetDateTime startOfDay, @Param("endOfDay") OffsetDateTime endOfDay);
+    List<Booking> findBookingsDueToday(@Param("startOfDay") LocalDate startOfDay, @Param("endOfDay") LocalDate endOfDay);
 
     @Query("SELECT b.id FROM Booking b WHERE b.returnedAt IS NULL AND b.user.active = TRUE AND b.dueAt BETWEEN :now AND :threeDaysLater")
     List<Long> findBookingIdsDueInDays(@Param("now") LocalDate now, @Param("threeDaysLater") LocalDate threeDaysLater);
