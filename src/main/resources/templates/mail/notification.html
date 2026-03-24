@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${headline}">Library Notification</title>
+</head>
+<body>
+<p>Dear <span th:text="${userName}">User</span>,</p>
+
+<h3 th:text="${headline}">Notification</h3>
+<p th:text="${intro}">Intro text</p>
+
+<p th:if="${summary}" th:text="${summary}">Summary</p>
+
+<!-- Email-safe table attributes (preferred over CSS for compatibility) -->
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+    <thead>
+    <tr>
+        <th>Book</th>
+        <th>Due Date</th>
+        <th th:if="${notificationType != 'HEAVY_USERS'}">Overdue Days</th>
+        <th th:if="${notificationType == 'UNPAID_FINES'}">Fine</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${items}">
+        <td th:text="${item.bookTitle}">Book Title</td>
+        <td th:text="${item.dueDate}">Due Date</td>
+        <td th:if="${notificationType != 'HEAVY_USERS'}" th:text="${item.overdueDays}">Overdue</td>
+        <td th:if="${notificationType == 'UNPAID_FINES'}" th:text="${item.fine}">Fine</td>
+    </tr>
+    </tbody>
+</table>
+
+<p>Thank you!</p>
+</body>
+</html>

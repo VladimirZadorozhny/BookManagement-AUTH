@@ -2,19 +2,17 @@
  * Service layer for Admin Mail related API interactions.
  */
 window.adminMailApi = {
-    notifyHeavyUsers(subject, body, minBooks) {
-        return api.post("/api/reports/notify-heavy-users", {
-            subject: subject,
-            body: body,
-            minBooksBorrowed: minBooks
-        });
+    notifyHeavyUsersAuto(minBooks) {
+        const query = minBooks ? `?minActiveBooks=${encodeURIComponent(minBooks)}` : "";
+        return api.post(`/api/reports/notify-heavy-users-auto${query}`);
     },
 
-    notifyOverdueUsers(subject, body) {
-        return api.post("/api/reports/notify-overdue-users", {
-            subject: subject,
-            body: body
-        });
+    notifyOverdueUsersAuto() {
+        return api.post("/api/reports/notify-overdue-users-auto");
+    },
+
+    notifyUnpaidFinesUsersAuto() {
+        return api.post("/api/reports/notify-unpaid-fines-users-auto");
     },
 
     notifySingleUser(userId, subject, body) {

@@ -71,6 +71,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query(value = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.book WHERE b.returnedAt IS NULL AND b.dueAt < :now")
     List<Booking> findOverdueBookingsForMailing(@Param("now") LocalDate now);
 
+    @Query(value = "SELECT DISTINCT b FROM Booking b JOIN FETCH b.user JOIN FETCH b.book WHERE (b.fine > 0 AND b.finePaid = false) OR (b.returnedAt IS NULL AND b.dueAt < :now)")
+    List<Booking> findUnpaidFinesBookingsForMailing(@Param("now") LocalDate now);
+
 
     long countByBookId(Long bookId);
 

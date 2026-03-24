@@ -47,12 +47,41 @@ public class BookingController {
         return ResponseEntity.ok("Notifications queued for heavy users.");
     }
 
+    @PostMapping("/notify-heavy-users-auto")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyHeavyUsersAuto(@RequestParam(required = false) Long minActiveBooks) {
+        adminMailService.sendBulkNotificationToHeavyUsers(minActiveBooks != null ? minActiveBooks : 5L);
+        return ResponseEntity.ok("Notifications queued for heavy users.");
+    }
+
     @PostMapping("/notify-overdue-users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> notifyOverdueUsers(@Valid @RequestBody AdminMailRequestDto requestDto) {
         adminMailService.sendBulkMailToOverdueUsers(requestDto.subject(), requestDto.body());
         return ResponseEntity.ok("Notifications queued for users with overdue books.");
     }
+
+    @PostMapping("/notify-overdue-users-auto")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyOverdueUsersAuto() {
+        adminMailService.sendBulkNotificationToOverdueUsers();
+        return ResponseEntity.ok("Notifications queued for users with overdue books.");
+    }
+
+    @PostMapping("/notify-unpaidfines-users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyUnpaidFinesUsers(@Valid @RequestBody AdminMailRequestDto requestDto) {
+        adminMailService.sendBulkMailToUnpaidFinesUsers(requestDto.subject(), requestDto.body());
+        return ResponseEntity.ok("Notifications queued for users with unpaid fines.");
+    }
+
+    @PostMapping("/notify-unpaid-fines-users-auto")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> notifyUnpaidFinesUsersAuto() {
+        adminMailService.sendBulkNotificationToUnpaidFinesUsers();
+        return ResponseEntity.ok("Notifications queued for users with unpaid fines.");
+    }
+
 
     @PostMapping("/notify-user/{userId}")
     @PreAuthorize("hasRole('ADMIN')")

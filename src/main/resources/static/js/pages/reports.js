@@ -110,7 +110,7 @@ class ReportsPage {
         
         // Add Notify All button to header for specific reports
         let headersHtml = headers.map(h => `<th>${h}</th>`).join('');
-        if (type === 'HEAVY_USERS' || type === 'OVERDUE') {
+        if (type === 'HEAVY_USERS' || type === 'OVERDUE' || type === 'UNPAID_FINES') {
             headersHtml = headersHtml.replace('<th>Actions</th>', `
                 <th>
                     Actions
@@ -127,6 +127,9 @@ class ReportsPage {
         if (!content || content.length === 0) {
             this.reportBody.innerHTML = `<tr><td colspan="${headers.length}" class="text-center py-5 text-muted">No records found for this report.</td></tr>`;
             this.paginationControls.style.display = 'none';
+            if (btnNotifyAll) {
+                btnNotifyAll.classList.add("d-none");
+            }
             return;
         }
 
@@ -210,21 +213,18 @@ class ReportsPage {
     }
 
     async handleNotifyAll(type) {
-        const confirmed = await modal.confirm(`Send custom notifications to ALL users in this report?`);
+        const confirmed = await modal.confirm(`Send predefined notifications to ALL "${type}" users in this report?`);
         if (!confirmed) return;
-
-        const subject = await modal.prompt("Bulk Message Subject:", "Library Notification");
-        if (subject === null) return;
-        const body = await modal.prompt("Bulk Message Body:", "This is a custom notification regarding your library account.");
-        if (body === null) return;
 
         try {
             let resp;
             if (type === 'HEAVY_USERS') {
                 const minBooks = byId('minActiveBooks').value || 5;
-                resp = await adminMailApi.notifyHeavyUsers(subject, body, minBooks);
+                resp = await adminMailApi.notifyHeavyUsersAuto(minBooks);
             } else if (type === 'OVERDUE') {
-                resp = await adminMailApi.notifyOverdueUsers(subject, body);
+                resp = await adminMailApi.notifyOverdueUsersAuto();
+            } else if (type === 'UNPAID_FINES') {
+                resp = await adminMailApi.notifyUnpaidFinesUsersAuto();
             }
 
             if (resp && resp.ok) {

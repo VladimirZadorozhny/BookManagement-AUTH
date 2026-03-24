@@ -1,6 +1,8 @@
 package org.mystudying.bookmanagementauth.services.mail;
 
 import org.mystudying.bookmanagementauth.domain.ReminderType;
+import org.mystudying.bookmanagementauth.dto.AdminNotificationItem;
+import org.mystudying.bookmanagementauth.dto.AdminNotificationType;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -80,5 +82,62 @@ public class MailTemplateService {
         context.setVariable("userName", userName);
         context.setVariable("loginTime", loginTime.format(LOGIN_TIME_FORMAT));
         return templateEngine.process("mail/login-alert", context);
+    }
+
+    public String buildAdminNotificationMail(String userName,
+                                             AdminNotificationType type,
+                                             java.util.List<AdminNotificationItem> items,
+                                             String summary) {
+        Context context = new Context();
+        context.setVariable("userName", userName);
+        context.setVariable("headline", getAdminNotificationHeadline(type));
+        context.setVariable("intro", getAdminNotificationIntro(type));
+        context.setVariable("summary", summary);
+        context.setVariable("notificationType", type.name());
+        context.setVariable("items", items);
+        return templateEngine.process("mail/notification", context);
+    }
+
+    public String getAdminNotificationSubject(AdminNotificationType type) {
+        switch (type) {
+            case HEAVY_USERS:
+                return "Library Notice: Multiple Active Borrowings";
+            case OVERDUE:
+                return "Action Required: Overdue Books";
+            case UNPAID_FINES:
+                return "Action Required: Unpaid Fines";
+            default:
+                return "Library Notification";
+        }
+    }
+
+    public String formatDate(LocalDate date) {
+        return date.format(DATE_FORMAT);
+    }
+
+    private String getAdminNotificationHeadline(AdminNotificationType type) {
+        switch (type) {
+            case HEAVY_USERS:
+                return "Active Borrowings Summary";
+            case OVERDUE:
+                return "Overdue Books Notice";
+            case UNPAID_FINES:
+                return "Unpaid Fines Notice";
+            default:
+                return "Library Notification";
+        }
+    }
+
+    private String getAdminNotificationIntro(AdminNotificationType type) {
+        switch (type) {
+            case HEAVY_USERS:
+                return "We noticed you have multiple active borrowings.";
+            case OVERDUE:
+                return "Our records show overdue books on your account.";
+            case UNPAID_FINES:
+                return "Our records show unpaid or accruing fines for the following bookings.";
+            default:
+                return "Please review the details below.";
+        }
     }
 }
