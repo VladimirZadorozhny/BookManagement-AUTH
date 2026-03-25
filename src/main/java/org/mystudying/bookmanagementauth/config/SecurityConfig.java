@@ -7,6 +7,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.mystudying.bookmanagementauth.dto.ErrorResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +24,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -120,6 +123,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authenticationProvider)
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+                .addFilterAfter(new RequestLoggingFilter(), SecurityContextHolderFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(customAccessDeniedHandler)
@@ -183,6 +187,37 @@ public class SecurityConfig {
                 response.setHeader(csrfToken.getHeaderName(), csrfToken.getToken());
             }
             filterChain.doFilter(request, response);
+        }
+    }
+
+    private static final class RequestLoggingFilter extends OncePerRequestFilter {
+
+        private final static Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
+
+        @Override
+        protected void doFilterInternal(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        FilterChain filterChain) throws ServletException, IOException {
+
+            long start = System.currentTimeMillis();
+
+            filterChain.doFilter(request, response);
+
+            long time = System.currentTimeMillis() - start;
+
+            String uri = request.getRequestURI();
+            String query = request.getQueryString();
+            String fullPath = query != null ? uri + "?" + query : uri;
+
+            logger.info("{} {} -> {} ({} ms)", request.getMethod(), fullPath, response.getStatus(), time);
+        }
+
+        @Override
+        protected boolean shouldNotFilter(HttpServletRequest request) {
+            String uri = request.getRequestURI();
+            return uri.startsWith("/css/")
+                    || uri.startsWith("/js/")
+                    || uri.equals("/favicon.ico");
         }
     }
 }
