@@ -8,6 +8,8 @@ import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.InsufficientAvailableStockException;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
+import org.mystudying.bookmanagementauth.services.user.UserBookingService;
+import org.mystudying.bookmanagementauth.services.user.UserService;
 import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperBarrier;
 import org.mystudying.bookmanagementauth.support.db.TestDataCleanup;
 import org.mystudying.bookmanagementauth.support.db.TestDataHelper;

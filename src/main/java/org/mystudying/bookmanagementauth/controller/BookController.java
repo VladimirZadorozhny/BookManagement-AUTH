@@ -3,6 +3,7 @@ package org.mystudying.bookmanagementauth.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.mystudying.bookmanagementauth.dto.*;
+import org.mystudying.bookmanagementauth.dto.book.*;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;
 import org.mystudying.bookmanagementauth.services.BookService;
 import org.mystudying.bookmanagementauth.services.InventoryService;

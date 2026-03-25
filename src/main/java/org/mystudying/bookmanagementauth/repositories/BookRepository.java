@@ -3,7 +3,7 @@ package org.mystudying.bookmanagementauth.repositories;
 import jakarta.persistence.LockModeType;
 import org.mystudying.bookmanagementauth.domain.Author;
 import org.mystudying.bookmanagementauth.domain.Book;
-import org.mystudying.bookmanagementauth.dto.BookDetailDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDetailDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

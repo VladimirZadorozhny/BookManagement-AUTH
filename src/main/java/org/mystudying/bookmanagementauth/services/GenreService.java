@@ -1,10 +1,10 @@
 package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Genre;
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
-import org.mystudying.bookmanagementauth.dto.GenreDto;
-import org.mystudying.bookmanagementauth.dto.GenreWithBooksDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDto;
+import org.mystudying.bookmanagementauth.dto.genre.CreateGenreRequestDto;
+import org.mystudying.bookmanagementauth.dto.genre.GenreDto;
+import org.mystudying.bookmanagementauth.dto.genre.GenreWithBooksDto;
 import org.mystudying.bookmanagementauth.exceptions.GenreHasBooksException;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.mappers.BookMapper;

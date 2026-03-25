@@ -1,8 +1,8 @@
 package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Booking;
-import org.mystudying.bookmanagementauth.dto.BookingReportDto;
-import org.mystudying.bookmanagementauth.dto.BookingReportType;
+import org.mystudying.bookmanagementauth.dto.booking.BookingReportDto;
+import org.mystudying.bookmanagementauth.dto.booking.BookingReportType;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

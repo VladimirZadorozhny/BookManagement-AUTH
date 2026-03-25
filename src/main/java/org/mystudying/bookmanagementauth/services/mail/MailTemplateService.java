@@ -1,8 +1,8 @@
 package org.mystudying.bookmanagementauth.services.mail;
 
 import org.mystudying.bookmanagementauth.domain.ReminderType;
-import org.mystudying.bookmanagementauth.dto.AdminNotificationItem;
-import org.mystudying.bookmanagementauth.dto.AdminNotificationType;
+import org.mystudying.bookmanagementauth.dto.mail.AdminNotificationItem;
+import org.mystudying.bookmanagementauth.dto.mail.AdminNotificationType;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;

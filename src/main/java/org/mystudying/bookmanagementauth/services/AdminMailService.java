@@ -2,8 +2,8 @@ package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Booking;
 import org.mystudying.bookmanagementauth.domain.User;
-import org.mystudying.bookmanagementauth.dto.AdminNotificationItem;
-import org.mystudying.bookmanagementauth.dto.AdminNotificationType;
+import org.mystudying.bookmanagementauth.dto.mail.AdminNotificationItem;
+import org.mystudying.bookmanagementauth.dto.mail.AdminNotificationType;
 import org.mystudying.bookmanagementauth.events.AdminUserMailRequestedEvent;
 import org.mystudying.bookmanagementauth.exceptions.NonRetryableMailException;
 import org.mystudying.bookmanagementauth.repositories.BookingRepository;

@@ -2,9 +2,12 @@ package org.mystudying.bookmanagementauth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mystudying.bookmanagementauth.dto.*;
-import org.mystudying.bookmanagementauth.services.UserAuthLifecycleService;
-import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.dto.auth.PasswordResetRequestDto;
+import org.mystudying.bookmanagementauth.dto.auth.RegisterRequestDto;
+import org.mystudying.bookmanagementauth.dto.auth.ResetPasswordDto;
+import org.mystudying.bookmanagementauth.dto.user.UserDto;
+import org.mystudying.bookmanagementauth.services.user.UserAuthLifecycleService;
+import org.mystudying.bookmanagementauth.services.user.UserService;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

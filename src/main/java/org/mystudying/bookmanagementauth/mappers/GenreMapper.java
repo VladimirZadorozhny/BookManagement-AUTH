@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.mappers;
 
 import org.mystudying.bookmanagementauth.domain.Genre;
-import org.mystudying.bookmanagementauth.dto.GenreDto;
+import org.mystudying.bookmanagementauth.dto.genre.GenreDto;
 import org.springframework.stereotype.Component;
 
 @Component

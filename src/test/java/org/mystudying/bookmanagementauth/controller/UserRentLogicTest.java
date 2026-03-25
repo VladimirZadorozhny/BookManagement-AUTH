@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
-import org.mystudying.bookmanagementauth.dto.BookingResponseDto;
+import org.mystudying.bookmanagementauth.dto.booking.BookingResponseDto;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.http.MediaType;

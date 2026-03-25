@@ -13,6 +13,7 @@ import org.mystudying.bookmanagementauth.exceptions.InvalidTokenException;
 import org.mystudying.bookmanagementauth.exceptions.TokenAlreadyUsedException;
 import org.mystudying.bookmanagementauth.exceptions.TokenExpiredException;
 import org.mystudying.bookmanagementauth.repositories.*;
+import org.mystudying.bookmanagementauth.services.user.UserAuthLifecycleService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;

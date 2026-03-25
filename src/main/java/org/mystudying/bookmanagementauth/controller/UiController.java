@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.controller;
 
-import org.mystudying.bookmanagementauth.config.UserPrincipal;
-import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.config.security.UserPrincipal;
+import org.mystudying.bookmanagementauth.services.user.UserService;
 import org.mystudying.bookmanagementauth.services.VerificationService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

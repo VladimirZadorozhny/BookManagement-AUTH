@@ -1,9 +1,9 @@
 package org.mystudying.bookmanagementauth.controller;
 
 import jakarta.validation.Valid;
-import org.mystudying.bookmanagementauth.dto.AdminMailRequestDto;
-import org.mystudying.bookmanagementauth.dto.BookingReportDto;
-import org.mystudying.bookmanagementauth.dto.BookingReportType;
+import org.mystudying.bookmanagementauth.dto.mail.AdminMailRequestDto;
+import org.mystudying.bookmanagementauth.dto.booking.BookingReportDto;
+import org.mystudying.bookmanagementauth.dto.booking.BookingReportType;
 import org.mystudying.bookmanagementauth.services.AdminMailService;
 import org.mystudying.bookmanagementauth.services.BookingService;
 import org.springframework.data.domain.Page;

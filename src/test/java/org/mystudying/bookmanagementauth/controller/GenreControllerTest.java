@@ -2,7 +2,7 @@ package org.mystudying.bookmanagementauth.controller;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
-import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
+import org.mystudying.bookmanagementauth.dto.genre.CreateGenreRequestDto;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;
 import org.springframework.http.MediaType;

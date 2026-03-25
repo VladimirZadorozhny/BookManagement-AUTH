@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.services.mail;
 
 import org.mystudying.bookmanagementauth.domain.FailedMailLog;
-import org.mystudying.bookmanagementauth.dto.FailedMailLogDto;
+import org.mystudying.bookmanagementauth.dto.mail.FailedMailLogDto;
 import org.mystudying.bookmanagementauth.repositories.FailedMailLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

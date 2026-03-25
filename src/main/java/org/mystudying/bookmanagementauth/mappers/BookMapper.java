@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.mappers;
 
 import org.mystudying.bookmanagementauth.domain.Book;
-import org.mystudying.bookmanagementauth.dto.BookDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDto;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -2,10 +2,10 @@ package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.mystudying.bookmanagementauth.dto.AuthorDto;
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.CreateAuthorRequestDto;
-import org.mystudying.bookmanagementauth.dto.UpdateAuthorRequestDto;
+import org.mystudying.bookmanagementauth.dto.author.AuthorDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDto;
+import org.mystudying.bookmanagementauth.dto.author.CreateAuthorRequestDto;
+import org.mystudying.bookmanagementauth.dto.author.UpdateAuthorRequestDto;
 import org.mystudying.bookmanagementauth.exceptions.AuthorNotFoundException;
 import org.mystudying.bookmanagementauth.services.AuthorService;
 import org.springframework.http.HttpStatus;

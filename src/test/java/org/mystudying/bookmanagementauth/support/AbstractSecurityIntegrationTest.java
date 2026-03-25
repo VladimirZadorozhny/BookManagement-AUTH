@@ -1,11 +1,11 @@
 package org.mystudying.bookmanagementauth.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
-import org.mystudying.bookmanagementauth.dto.UserDto;
-import org.mystudying.bookmanagementauth.services.UserAuthLifecycleService;
-import org.mystudying.bookmanagementauth.services.UserBookingService;
-import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.dto.auth.RegisterRequestDto;
+import org.mystudying.bookmanagementauth.dto.user.UserDto;
+import org.mystudying.bookmanagementauth.services.user.UserAuthLifecycleService;
+import org.mystudying.bookmanagementauth.services.user.UserBookingService;
+import org.mystudying.bookmanagementauth.services.user.UserService;
 import org.mystudying.bookmanagementauth.services.VerificationService;
 import org.mystudying.bookmanagementauth.support.concurrency.ConcurrentTestHelperBarrier;
 import org.mystudying.bookmanagementauth.support.db.TestFixtures;

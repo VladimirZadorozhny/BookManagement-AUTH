@@ -3,7 +3,7 @@ package org.mystudying.bookmanagementauth.mail;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.domain.FailedMailLog;
-import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
+import org.mystudying.bookmanagementauth.dto.auth.RegisterRequestDto;
 import org.mystudying.bookmanagementauth.repositories.FailedMailLogRepository;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;

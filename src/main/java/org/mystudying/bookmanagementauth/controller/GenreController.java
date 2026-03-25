@@ -2,10 +2,10 @@ package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.CreateGenreRequestDto;
-import org.mystudying.bookmanagementauth.dto.GenreDto;
-import org.mystudying.bookmanagementauth.dto.GenreWithBooksDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDto;
+import org.mystudying.bookmanagementauth.dto.genre.CreateGenreRequestDto;
+import org.mystudying.bookmanagementauth.dto.genre.GenreDto;
+import org.mystudying.bookmanagementauth.dto.genre.GenreWithBooksDto;
 import org.mystudying.bookmanagementauth.exceptions.GenreNotFoundException;
 import org.mystudying.bookmanagementauth.services.GenreService;
 import org.springframework.data.domain.Page;

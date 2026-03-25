@@ -1,10 +1,10 @@
 package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Author;
-import org.mystudying.bookmanagementauth.dto.AuthorDto;
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.CreateAuthorRequestDto;
-import org.mystudying.bookmanagementauth.dto.UpdateAuthorRequestDto;
+import org.mystudying.bookmanagementauth.dto.author.AuthorDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDto;
+import org.mystudying.bookmanagementauth.dto.author.CreateAuthorRequestDto;
+import org.mystudying.bookmanagementauth.dto.author.UpdateAuthorRequestDto;
 import org.mystudying.bookmanagementauth.exceptions.AuthorHasBooksException;
 import org.mystudying.bookmanagementauth.exceptions.AuthorNotFoundException;
 import org.mystudying.bookmanagementauth.mappers.AuthorMapper;
@@ -60,7 +60,7 @@ public class AuthorService {
     @Transactional
     public AuthorDto update(long id, UpdateAuthorRequestDto authorDto) {
 
-        var author =  authorRepository.findById(id).orElseThrow(() -> new AuthorNotFoundException(id));
+        var author = authorRepository.findById(id).orElseThrow(() -> new AuthorNotFoundException(id));
         author.setName(authorDto.name());
         author.setBirthdate(authorDto.birthdate());
 

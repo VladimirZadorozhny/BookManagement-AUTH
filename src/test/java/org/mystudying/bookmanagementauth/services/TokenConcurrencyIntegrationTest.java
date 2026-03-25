@@ -2,8 +2,8 @@ package org.mystudying.bookmanagementauth.services;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mystudying.bookmanagementauth.dto.RegisterRequestDto;
-import org.mystudying.bookmanagementauth.dto.UserDto;
+import org.mystudying.bookmanagementauth.dto.auth.RegisterRequestDto;
+import org.mystudying.bookmanagementauth.dto.user.UserDto;
 import org.mystudying.bookmanagementauth.exceptions.TokenAlreadyUsedException;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;

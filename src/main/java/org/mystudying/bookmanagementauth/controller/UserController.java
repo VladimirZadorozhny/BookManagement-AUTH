@@ -2,10 +2,14 @@ package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.mystudying.bookmanagementauth.dto.*;
+import org.mystudying.bookmanagementauth.dto.book.BookActionRequestDto;
+import org.mystudying.bookmanagementauth.dto.booking.BookingResponseDto;
+import org.mystudying.bookmanagementauth.dto.user.CreateUserRequestDto;
+import org.mystudying.bookmanagementauth.dto.user.UpdateUserRequestDto;
+import org.mystudying.bookmanagementauth.dto.user.UserDto;
 import org.mystudying.bookmanagementauth.exceptions.UserNotFoundException;
-import org.mystudying.bookmanagementauth.services.UserBookingService;
-import org.mystudying.bookmanagementauth.services.UserService;
+import org.mystudying.bookmanagementauth.services.user.UserBookingService;
+import org.mystudying.bookmanagementauth.services.user.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;

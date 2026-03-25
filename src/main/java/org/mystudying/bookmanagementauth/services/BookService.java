@@ -2,11 +2,11 @@ package org.mystudying.bookmanagementauth.services;
 
 import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.domain.Genre;
-import org.mystudying.bookmanagementauth.dto.BookDetailDto;
-import org.mystudying.bookmanagementauth.dto.BookDto;
-import org.mystudying.bookmanagementauth.dto.BookSearchCriteria;
-import org.mystudying.bookmanagementauth.dto.CreateBookRequestDto;
-import org.mystudying.bookmanagementauth.dto.UpdateBookRequestDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDetailDto;
+import org.mystudying.bookmanagementauth.dto.book.BookDto;
+import org.mystudying.bookmanagementauth.dto.book.BookSearchCriteria;
+import org.mystudying.bookmanagementauth.dto.book.CreateBookRequestDto;
+import org.mystudying.bookmanagementauth.dto.book.UpdateBookRequestDto;
 import org.mystudying.bookmanagementauth.exceptions.AuthorNotFoundException;
 import org.mystudying.bookmanagementauth.exceptions.BookHasBookingsException;
 import org.mystudying.bookmanagementauth.exceptions.BookNotFoundException;

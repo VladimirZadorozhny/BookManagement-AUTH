@@ -1,7 +1,7 @@
 package org.mystudying.bookmanagementauth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.mystudying.bookmanagementauth.dto.FailedMailLogDto;
+import org.mystudying.bookmanagementauth.dto.mail.FailedMailLogDto;
 import org.mystudying.bookmanagementauth.services.mail.FailedMailService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
