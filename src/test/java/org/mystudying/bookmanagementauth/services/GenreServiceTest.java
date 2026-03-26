@@ -6,6 +6,8 @@ import org.mystudying.bookmanagementauth.domain.Book;
 import org.mystudying.bookmanagementauth.domain.Genre;
 import org.mystudying.bookmanagementauth.dto.book.BookDto;
 import org.mystudying.bookmanagementauth.dto.genre.GenreDto;
+import org.mystudying.bookmanagementauth.mappers.BookMapper;
+import org.mystudying.bookmanagementauth.mappers.GenreMapper;
 import org.mystudying.bookmanagementauth.repositories.BookRepository;
 import org.mystudying.bookmanagementauth.repositories.GenreRepository;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -19,10 +21,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // Slice test: JPA + one service
 @DataJpaTest
-@Import(GenreService.class)
+@Import({GenreService.class, GenreMapper.class, BookMapper.class})
 class GenreServiceTest {
 
     private final GenreService genreService;
+
+    private final GenreMapper genreMapper;
+
+    private final BookMapper bookMapper;
 
 
     private final GenreRepository genreRepository;
@@ -33,8 +39,11 @@ class GenreServiceTest {
 
     private final TestEntityManager em;
 
-    public GenreServiceTest(GenreService genreService, GenreRepository genreRepository, BookRepository bookRepository, TestEntityManager em) {
+
+    public GenreServiceTest(GenreService genreService, GenreMapper genreMapper, BookMapper bookMapper, GenreRepository genreRepository, BookRepository bookRepository, TestEntityManager em) {
         this.genreService = genreService;
+        this.genreMapper = genreMapper;
+        this.bookMapper = bookMapper;
         this.genreRepository = genreRepository;
         this.bookRepository = bookRepository;
         this.em = em;

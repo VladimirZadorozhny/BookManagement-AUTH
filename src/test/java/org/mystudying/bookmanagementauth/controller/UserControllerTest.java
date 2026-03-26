@@ -44,13 +44,16 @@ public class UserControllerTest extends AbstractSecurityIntegrationTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void getAllUsersReturnsAllUsers() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/users"))
+        MvcResult result = mockMvc.perform(get("/api/users")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE))
+                        .param("sort", "name,asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(JdbcTestUtils.countRowsInTable(jdbcClient, USERS_TABLE)))
+                .andExpect(jsonPath("$.totalElements").value(JdbcTestUtils.countRowsInTable(jdbcClient, USERS_TABLE)))
                 .andReturn();
 
         String jsonResponse = result.getResponse().getContentAsString();
-        List<String> names = JsonPath.parse(jsonResponse).read("$[*].name");
+        List<String> names = JsonPath.parse(jsonResponse).read("$.content[*].name");
 
         assertThat(names)
                 .isSortedAccordingTo(String.CASE_INSENSITIVE_ORDER)

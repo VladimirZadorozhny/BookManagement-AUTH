@@ -1,9 +1,9 @@
 package org.mystudying.bookmanagementauth.mail;
 
-import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.mystudying.bookmanagementauth.domain.FailedMailLog;
 import org.mystudying.bookmanagementauth.dto.auth.RegisterRequestDto;
+import org.mystudying.bookmanagementauth.exceptions.RetryableMailException;
 import org.mystudying.bookmanagementauth.repositories.FailedMailLogRepository;
 import org.mystudying.bookmanagementauth.services.mail.MailService;
 import org.mystudying.bookmanagementauth.support.AbstractSecurityIntegrationTest;
@@ -18,7 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -35,10 +35,10 @@ public class MailRetryIntegrationTest extends AbstractSecurityIntegrationTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    void shouldLogToFailedMailLogAfterExhaustingRetries() throws Exception {
+    void shouldLogToFailedMailLogAfterExhaustingRetries() {
         // GIVEN: mailService always throws exception
         String email = "retry.test" + UUID.randomUUID() + "@example.com";
-        doThrow(new MessagingException("SMTP Connection Refused"))
+        doThrow(new RetryableMailException("SMTP Connection Refused", new Exception()))
                 .when(mailService).send(anyString(), anyString(), anyString());
 
         RegisterRequestDto request = new RegisterRequestDto("Retry User", email, "password123");
@@ -64,7 +64,9 @@ public class MailRetryIntegrationTest extends AbstractSecurityIntegrationTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertEquals("SMTP Connection Refused", failure.getErrorMessage());
+        assertTrue(failure.getErrorMessage().contains("SMTP Connection Refused"),
+                "Expected error message to contain 'SMTP Connection Refused'");
+
 
         // Cleanup
         testDataCleanup.deleteFailedMailsByRecipient(email);

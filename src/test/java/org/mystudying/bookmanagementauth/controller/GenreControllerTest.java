@@ -28,13 +28,16 @@ public class GenreControllerTest extends AbstractSecurityIntegrationTest {
     @Test
     void getAllGenresReturnsAllGenresSorted() throws Exception {
         var amountGenres = JdbcTestUtils.countRowsInTable(jdbcClient, GENRES_TABLE);
-        MvcResult result = mockMvc.perform(get("/api/genres"))
+        MvcResult result = mockMvc.perform(get("/api/genres")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE))
+                        .param("sort", "name,asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(amountGenres))
+                .andExpect(jsonPath("$.totalElements").value(amountGenres))
                 .andReturn();
 
         String jsonResponse = result.getResponse().getContentAsString();
-        List<String> names = JsonPath.parse(jsonResponse).read("$[*].name");
+        List<String> names = JsonPath.parse(jsonResponse).read("$.content[*].name");
 
         assertThat(names).isSortedAccordingTo(String.CASE_INSENSITIVE_ORDER);
     }
@@ -67,18 +70,23 @@ public class GenreControllerTest extends AbstractSecurityIntegrationTest {
     void getBooksByGenreNameReturnsCorrectBooks() throws Exception {
         long id = testDataHelper.idOfGenre(TestFixtures.GENRE_1_NAME);
         int amountBooksOfGenre = JdbcTestUtils.countRowsInTableWhere(jdbcClient, BOOK_GENRES_TABLE, "genre_id = " + id);
-        mockMvc.perform(get("/api/genres/name/{name}/books", TestFixtures.GENRE_1_NAME))
+        mockMvc.perform(get("/api/genres/name/{name}/books", TestFixtures.GENRE_1_NAME)
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(amountBooksOfGenre));
+                .andExpect(jsonPath("$.totalElements").value(amountBooksOfGenre));
     }
 
     @Test
     void getAllGenresWithBooksReturnsGroupedData() throws Exception {
-        mockMvc.perform(get("/api/genres/with-books"))
+        mockMvc.perform(get("/api/genres/with-books")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE))
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].name").exists())
-                .andExpect(jsonPath("$[0].books").isArray());
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].name").exists())
+                .andExpect(jsonPath("$.content[0].books").isArray());
     }
 
     @Test

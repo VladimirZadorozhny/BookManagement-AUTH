@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="sidebar(type)">
     <!-- Book Specific Sidebar -->
@@ -13,9 +13,10 @@
                 <div class="d-grid gap-2">
                     <button class="btn btn-outline-primary text-start" id="btnAll">Show All</button>
                     <button class="btn btn-outline-primary text-start" id="btnAvailable">Show Available Only</button>
-                    
+
                     <div class="dropdown w-100">
-                        <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" data-bs-toggle="dropdown"
+                                type="button">
                             Filter By...
                         </button>
                         <ul class="dropdown-menu w-100">
@@ -25,7 +26,7 @@
                             <li><a class="dropdown-item" href="#" id="linkByTitle">By Title</a></li>
                         </ul>
                     </div>
-                    
+
                     <button class="btn btn-outline-primary text-start" id="btnGrouped">Grouped by Genre</button>
                     <button class="btn btn-outline-primary text-start" id="btnGenresList">Genres List</button>
                 </div>
@@ -47,10 +48,10 @@
                 <div class="d-grid gap-2">
                     <button class="btn btn-outline-primary text-start" id="btnAllAuthors">Show All Authors</button>
                     <div class="mb-3 mt-2">
-                        <label for="searchAuthorName" class="form-label small">Find Author</label>
+                        <label class="form-label small" for="searchAuthorName">Find Author</label>
                         <div class="input-group input-group-sm">
-                            <input type="text" id="searchAuthorName" class="form-control" placeholder="Name...">
-                            <button class="btn btn-primary" type="button" id="btnSearchAuthor">Find</button>
+                            <input class="form-control" id="searchAuthorName" placeholder="Name..." type="text">
+                            <button class="btn btn-primary" id="btnSearchAuthor" type="button">Find</button>
                         </div>
                     </div>
                 </div>
@@ -69,21 +70,22 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label for="reportType" class="form-label">Report Type</label>
-                    <select id="reportType" class="form-select">
-                        <option th:each="type : ${T(org.mystudying.bookmanagementauth.dto.BookingReportType).values()}"
-                                th:value="${type}" th:text="${type.name().replace('_', ' ')}">Report Type</option>
+                    <label class="form-label" for="reportType">Report Type</label>
+                    <select class="form-select" id="reportType">
+                        <option th:each="type : ${T(org.mystudying.bookmanagementauth.dto.booking.BookingReportType).values()}"
+                                th:text="${type.name().replace('_', ' ')}" th:value="${type}">Report Type
+                        </option>
                     </select>
                 </div>
                 <div class="mb-3" id="daysInputContainer" style="display: none;">
-                    <label for="days" class="form-label">Days</label>
-                    <input type="number" id="days" class="form-control" value="7">
+                    <label class="form-label" for="days">Days</label>
+                    <input class="form-control" id="days" type="number" value="7">
                 </div>
                 <div class="mb-3" id="minActiveBooksInputContainer" style="display: none;">
-                    <label for="minActiveBooks" class="form-label">Min Active Books</label>
-                    <input type="number" id="minActiveBooks" class="form-control" value="3">
+                    <label class="form-label" for="minActiveBooks">Min Active Books</label>
+                    <input class="form-control" id="minActiveBooks" type="number" value="3">
                 </div>
-                <button id="btnRunReport" class="btn btn-primary w-100">Run Report</button>
+                <button class="btn btn-primary w-100" id="btnRunReport">Run Report</button>
             </div>
         </div>
     </div>
@@ -96,18 +98,18 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label for="filterEmail" class="form-label">To Email</label>
-                    <input type="text" id="filterEmail" class="form-control" placeholder="Email...">
+                    <label class="form-label" for="filterEmail">To Email</label>
+                    <input class="form-control" id="filterEmail" placeholder="Email..." type="text">
                 </div>
                 <div class="mb-3">
-                    <label for="startDate" class="form-label">From Date</label>
-                    <input type="datetime-local" id="startDate" class="form-control">
+                    <label class="form-label" for="startDate">From Date</label>
+                    <input class="form-control" id="startDate" type="datetime-local">
                 </div>
                 <div class="mb-3">
-                    <label for="endDate" class="form-label">To Date</label>
-                    <input type="datetime-local" id="endDate" class="form-control">
+                    <label class="form-label" for="endDate">To Date</label>
+                    <input class="form-control" id="endDate" type="datetime-local">
                 </div>
-                <button id="btnApplyMailFilter" class="btn btn-primary w-100">Filter Mails</button>
+                <button class="btn btn-primary w-100" id="btnApplyMailFilter">Filter Mails</button>
             </div>
         </div>
     </div>
@@ -119,10 +121,17 @@
                 <h5 class="mb-0">User Actions</h5>
             </div>
             <div class="list-group list-group-flush" id="user-sidebar-list">
-                <button type="button" class="list-group-item list-group-item-action active" id="btnPersonalInfo">Personal Info</button>
-                <button type="button" class="list-group-item list-group-item-action" id="btnActiveBookings">Borrowed books</button>
-                <button type="button" class="list-group-item list-group-item-action" id="btnAllBookings">All Bookings</button>
-                <button type="button" class="list-group-item list-group-item-action text-danger" id="btnToggleActiveStatus" sec:authorize="hasRole('ADMIN')">Deactivate/Activate</button>
+                <button class="list-group-item list-group-item-action active" id="btnPersonalInfo" type="button">
+                    Personal Info
+                </button>
+                <button class="list-group-item list-group-item-action" id="btnActiveBookings" type="button">Borrowed
+                    books
+                </button>
+                <button class="list-group-item list-group-item-action" id="btnAllBookings" type="button">All Bookings
+                </button>
+                <button class="list-group-item list-group-item-action text-danger" id="btnToggleActiveStatus"
+                        sec:authorize="hasRole('ADMIN')" type="button">Deactivate/Activate
+                </button>
             </div>
         </div>
     </div>

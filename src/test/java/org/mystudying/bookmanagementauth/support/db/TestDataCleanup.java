@@ -77,7 +77,8 @@ public class TestDataCleanup {
         // 3. Delete Books created in tests
         List<String> testBookTitles = List.of(
                 "Test Book 1", "Test Book 2", "Book For Deletion", "Rentable Book",
-                "Logic Book A", "Logic Book B", "Overdue Book", "Fined Book"
+                "Logic Book A", "Logic Book B", "Overdue Book", "Fined Book", "New Book Title Admin1",
+                "New Book Title Admin2"
         );
 
         if (!testBookTitles.isEmpty()) {

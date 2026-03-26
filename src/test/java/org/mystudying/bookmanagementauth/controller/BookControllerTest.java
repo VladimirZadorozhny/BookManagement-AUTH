@@ -42,13 +42,16 @@ public class BookControllerTest extends AbstractSecurityIntegrationTest {
 
     @Test
     void getAllBooksReturnsAllBooks() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/books"))
+        MvcResult result = mockMvc.perform(get("/api/books")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE))
+                        .param("sort", "title,asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE)))
+                .andExpect(jsonPath("$.totalElements").value(JdbcTestUtils.countRowsInTable(jdbcClient, BOOKS_TABLE)))
                 .andReturn();
 
         String jsonResponse = result.getResponse().getContentAsString();
-        List<String> titles = JsonPath.parse(jsonResponse).read("$[*].title");
+        List<String> titles = JsonPath.parse(jsonResponse).read("$.content[*].title");
 
         assertThat(titles)
                 .isSortedAccordingTo(String.CASE_INSENSITIVE_ORDER)
@@ -56,43 +59,49 @@ public class BookControllerTest extends AbstractSecurityIntegrationTest {
     }
 
     @Test
-    void getAllBooksReturnsAvailableBooks() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/books").queryParam("available", "true"))
+    void getAllBooksWithAvailableParamReturnsAvailableBooks() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/books").queryParam("available", "true")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE)))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String jsonResponse = result.getResponse().getContentAsString();
-        List<String> titles = JsonPath.parse(jsonResponse).read("$[*].title");
+        List<String> titles = JsonPath.parse(jsonResponse).read("$.content[*].title");
 
         assertThat(titles).contains(TestFixtures.BOOK_1_TITLE, TestFixtures.BOOK_DELETE_TITLE, TestFixtures.BOOK_RENTABLE_TITLE);
         assertThat(titles).doesNotContain(TestFixtures.BOOK_2_TITLE);
 
-        List<Integer> available = JsonPath.parse(jsonResponse).read("$[*].available");
+        List<Integer> available = JsonPath.parse(jsonResponse).read("$.content[*].available");
         assertThat(available).allSatisfy(amount -> assertThat(amount).isPositive());
     }
 
     @Test
-    void getAllBooksReturnsUnavailableBooks() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/books").queryParam("available", "false"))
+    void getAllBooksWithUnavailableParamReturnsUnavailableBooks() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/books").queryParam("available", "false")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE)))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String jsonResponse = result.getResponse().getContentAsString();
-        List<String> titles = JsonPath.parse(jsonResponse).read("$[*].title");
+        List<String> titles = JsonPath.parse(jsonResponse).read("$.content[*].title");
 
         assertThat(titles).contains(TestFixtures.BOOK_2_TITLE);
         assertThat(titles).doesNotContain(TestFixtures.BOOK_1_TITLE, TestFixtures.BOOK_DELETE_TITLE, TestFixtures.BOOK_RENTABLE_TITLE);
 
-        List<Integer> available = JsonPath.parse(jsonResponse).read("$[*].available");
+        List<Integer> available = JsonPath.parse(jsonResponse).read("$.content[*].available");
         assertThat(available).allSatisfy(amount -> assertThat(amount).isZero());
     }
 
     @Test
-    void getAllBooksReturnsBooksByYear() throws Exception {
-        mockMvc.perform(get("/api/books").queryParam("year", "2001"))
+    void getAllBooksWithYearParamReturnsBooksByYear() throws Exception {
+        mockMvc.perform(get("/api/books").queryParam("year", "2001")
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].year").value(everyItem(is(2001))))
-                .andExpect(jsonPath("$.length()").value(JdbcTestUtils.countRowsInTableWhere(
+                .andExpect(jsonPath("$.content[*].year").value(everyItem(is(2001))))
+                .andExpect(jsonPath("$.totalElements").value(JdbcTestUtils.countRowsInTableWhere(
                         jdbcClient, BOOKS_TABLE, "year = 2001"
                 )));
     }
@@ -101,7 +110,9 @@ public class BookControllerTest extends AbstractSecurityIntegrationTest {
     void getAllBooksReturnsBooksByAuthorName() throws Exception {
         String authorName = TestFixtures.AUTHOR_1_NAME;
 
-        MvcResult result = mockMvc.perform(get("/api/books").queryParam("authorName", authorName))
+        MvcResult result = mockMvc.perform(get("/api/books").queryParam("authorName", authorName)
+                        .param("page", "0")
+                        .param("size", String.valueOf(Integer.MAX_VALUE)))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -116,7 +127,7 @@ public class BookControllerTest extends AbstractSecurityIntegrationTest {
                 .single();
 
         String jsonResponse = result.getResponse().getContentAsString();
-        List<String> titles = JsonPath.parse(jsonResponse).read("$[*].title");
+        List<String> titles = JsonPath.parse(jsonResponse).read("$.content[*].title");
 
         assertThat(titles).hasSize((int) expectedDbCount);
         assertThat(titles).contains(TestFixtures.BOOK_1_TITLE, TestFixtures.BOOK_RENTABLE_TITLE);
