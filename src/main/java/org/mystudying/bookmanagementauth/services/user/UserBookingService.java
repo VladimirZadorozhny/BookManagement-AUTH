@@ -41,6 +41,7 @@ public class UserBookingService {
     }
 
     public List<BookingResponseDto> findBookingsByUserId(long userId) {
+        LocalDate now = LocalDate.now();
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         return bookingRepository.findAllByUserIdWithBooks(userId).stream()
                 .sorted((b1, b2) -> {
@@ -50,8 +51,8 @@ public class UserBookingService {
                 })
                 .map(b -> {
                     BigDecimal displayFine = b.getFine();
-                    if (b.getReturnedAt() == null && b.isExpired()) {
-                        displayFine = b.calculateFine();
+                    if (b.getReturnedAt() == null && b.isExpired(now)) {
+                        displayFine = b.calculateFine(now);
                     }
                     return new BookingResponseDto(
                             b.getId(),
@@ -72,6 +73,7 @@ public class UserBookingService {
 
     @Transactional
     public void rentBook(long userId, long bookId) {
+        LocalDate now = LocalDate.now();
         User user = userRepository.findUserByIdWithBookings(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
@@ -79,7 +81,7 @@ public class UserBookingService {
             throw new BookAlreadyBorrowedException();
         }
 
-        boolean hasOverdue = user.getBookings().stream().anyMatch(Booking::isExpired);
+        boolean hasOverdue = user.getBookings().stream().anyMatch(booking -> booking.isExpired(now));
         if (hasOverdue) throw new UserHasOverdueBooksException(userId);
 
         boolean hasFines = user.getBookings().stream()
@@ -89,21 +91,22 @@ public class UserBookingService {
         inventoryService.decrementStock(bookId);
 
         Book bookRef = entityManager.getReference(Book.class, bookId);
-        Booking booking = new Booking(user, bookRef, LocalDate.now(), LocalDate.now().plusDays(14));
+        Booking booking = new Booking(user, bookRef, now, now.plusDays(14));
         user.addBooking(booking);
         bookingRepository.save(booking);
     }
 
     @Transactional
     public void returnBook(long userId, long bookId) {
+        LocalDate now = LocalDate.now();
         if (!userRepository.existsById(userId)) throw new UserNotFoundException(userId);
         if (!bookRepository.existsById(bookId)) throw new BookNotFoundException(bookId);
 
         Booking booking = bookingRepository.findActiveBooking(userId, bookId)
-                .orElseThrow(() -> new BookNotBorrowedException());
+                .orElseThrow(BookNotBorrowedException::new);
 
-        booking.setReturnedAt(LocalDate.now());
-        booking.setFine(booking.calculateFine());
+        booking.setReturnedAt(now);
+        booking.setFine(booking.calculateFine(now));
 
         inventoryService.incrementStock(bookId);
     }
@@ -111,7 +114,7 @@ public class UserBookingService {
     @Transactional
     public void payFine(long userId, long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new BookNotBorrowedException());
+                .orElseThrow(BookNotBorrowedException::new);
 
         if (booking.getUser().getId() != userId) throw new UserNotFoundException(userId);
 

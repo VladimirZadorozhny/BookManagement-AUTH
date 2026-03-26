@@ -56,13 +56,13 @@ public class BookingService {
             default:
                 throw new IllegalArgumentException("Unknown report type: " + type);
         }
-        return bookings.map(this::toReportDto);
+        return bookings.map(booking -> toReportDto(booking, now));
     }
 
-    private BookingReportDto toReportDto(Booking booking) {
+    private BookingReportDto toReportDto(Booking booking, LocalDate now) {
         BigDecimal fine = booking.getFine();
-        if (booking.getReturnedAt() == null && booking.isExpired()) {
-            fine = booking.calculateFine();
+        if (booking.getReturnedAt() == null && booking.isExpired(now)) {
+            fine = booking.calculateFine(now);
         }
 
         return new BookingReportDto(
@@ -75,7 +75,7 @@ public class BookingService {
                 booking.getBorrowedAt(),
                 booking.getDueAt(),
                 booking.getReturnedAt(),
-                booking.overdueDays(),
+                booking.overdueDays(now),
                 fine,
                 booking.isFinePaid()
         );

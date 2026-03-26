@@ -125,7 +125,7 @@ public class AdminMailService {
         return bookings.stream()
                 .map(booking -> {
                     String dueDate = booking.getDueAt() != null ? mailTemplateService.formatDate(booking.getDueAt()) : "-";
-                    long overdueDaysValue = calculateOverdueDays(booking, now);
+                    long overdueDaysValue = booking.overdueDays(now);
                     String overdueDays = overdueDaysValue > 0 ? overdueDaysValue + " days" : "-";
                     String fine = "-";
                     if (type == AdminNotificationType.UNPAID_FINES) {
@@ -159,28 +159,13 @@ public class AdminMailService {
         }
     }
 
-    private long calculateOverdueDays(Booking booking, LocalDate now) {
-        if (booking.getDueAt() == null) {
-            return 0;
-        }
-        if (booking.getReturnedAt() != null) {
-            if (booking.getReturnedAt().isAfter(booking.getDueAt())) {
-                return java.time.temporal.ChronoUnit.DAYS.between(booking.getDueAt(), booking.getReturnedAt());
-            }
-            return 0;
-        }
-        if (now.isAfter(booking.getDueAt())) {
-            return java.time.temporal.ChronoUnit.DAYS.between(booking.getDueAt(), now);
-        }
-        return 0;
-    }
-
     private BigDecimal resolveFine(Booking booking, LocalDate now) {
-        BigDecimal fine = booking.getFine() == null ? BigDecimal.ZERO : booking.getFine();
-        if (fine.compareTo(BigDecimal.ZERO) == 0 && booking.getReturnedAt() == null && now.isAfter(booking.getDueAt())) {
-            fine = booking.calculateFine();
+
+        if (booking.getReturnedAt() == null && now.isAfter(booking.getDueAt())) {
+            return booking.calculateFine(now);
         }
-        return fine;
+
+        return booking.getFine() == null ? BigDecimal.ZERO : booking.getFine();
     }
 
     private String formatCurrency(BigDecimal value) {

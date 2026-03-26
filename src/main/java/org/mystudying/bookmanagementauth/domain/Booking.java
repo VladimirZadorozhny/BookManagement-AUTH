@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.Objects;
 
 @Entity
 @Table(name = "bookings")
@@ -93,23 +92,23 @@ public class Booking {
         this.finePaid = finePaid;
     }
 
-    public boolean isExpired() {
-        return returnedAt == null && LocalDate.now().isAfter(dueAt);
+    public boolean isExpired(LocalDate now) {
+        return returnedAt == null && now.isAfter(dueAt);
     }
 
-    public long overdueDays() {
+    public long overdueDays(LocalDate now) {
         if (returnedAt != null) {
             if (returnedAt.isAfter(dueAt)) {
                 return ChronoUnit.DAYS.between(dueAt, returnedAt);
             }
             return 0;
         }
-        if (!isExpired()) return 0;
-        return ChronoUnit.DAYS.between(dueAt, LocalDate.now());
+        if (!isExpired(now)) return 0;
+        return ChronoUnit.DAYS.between(dueAt, now);
     }
 
-    public BigDecimal calculateFine() {
-        return BigDecimal.valueOf(overdueDays()); // $1 per day assumption
+    public BigDecimal calculateFine(LocalDate now) {
+        return BigDecimal.valueOf(overdueDays(now)); // $1 per day assumption
     }
 
     @Override
