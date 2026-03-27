@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,7 @@ public class UserBookingService {
     }
 
     public List<BookingResponseDto> findBookingsByUserId(long userId) {
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(ZoneOffset.UTC);
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         return bookingRepository.findAllByUserIdWithBooks(userId).stream()
                 .sorted((b1, b2) -> {
@@ -73,7 +74,7 @@ public class UserBookingService {
 
     @Transactional
     public void rentBook(long userId, long bookId) {
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(ZoneOffset.UTC);
         User user = userRepository.findUserByIdWithBookings(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
@@ -98,7 +99,7 @@ public class UserBookingService {
 
     @Transactional
     public void returnBook(long userId, long bookId) {
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(ZoneOffset.UTC);
         if (!userRepository.existsById(userId)) throw new UserNotFoundException(userId);
         if (!bookRepository.existsById(bookId)) throw new BookNotFoundException(bookId);
 

@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 @Service
@@ -25,7 +26,7 @@ public class BookingService {
 
     public Page<BookingReportDto> getBookingReport(BookingReportType type, Integer dueSoonDays, Long minActiveBooks, Pageable pageable) {
         Page<Booking> bookings;
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(ZoneOffset.UTC);
 
         switch (type) {
             case ALL:
