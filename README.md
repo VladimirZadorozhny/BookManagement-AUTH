@@ -1,240 +1,369 @@
-# Book Management Application (Spring Boot + JPA)
+![Java](https://img.shields.io/badge/Java-17-blue)  
+![Spring Boot](https://img.shields.io/badge/SpringBoot-3.x-brightgreen)  
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
 
-A full-stack **Spring Boot + JPA** pet project with a **vanilla JavaScript frontend** that models a real-world library / book-renting system.
-The application evolved through multiple architectural stages (Console → Web → JDBC → JPA) and now focuses on **correct domain modeling, performance-aware JPA usage, and clean REST design**.
+# Book Management System – Event-Driven Backend
 
-This project is intentionally **not over-simplified**: it contains real-life concerns such as booking workflows, overdue handling, fines, reporting, pagination, and N+1 query prevention.
-
+> A modular monolith built with Spring Boot demonstrating **event-driven architecture**, **resilient async processing**,
+> and **secure transactional workflows**.
 ---
 
-## Key Goals of the Project
+## Project Overview
 
-* Practice **Spring Boot + JPA** in a realistic domain
-* Learn **fetch strategies**, `JOIN FETCH`, pagination, and N+1 avoidance
-* Build a **non-framework frontend** with explicit state handling
-* Design a system that remains **testable and evolvable**
-* Simulate real backend complexity (reports, aggregates, workflows)
+This project manages a library system with:
 
+- Secure authentication & token workflows
+- Booking lifecycle management with business constraints
+- Scheduler-driven reminders
+- Event-driven mail system with retry & recovery
+- Reporting & admin bulk notifications
+
+**Goal:**   
+Design a backend that is not just functional, but **reliable, consistent, and production-aware**.
+  
+---  
 ---
 
-## Features
+## Key Architectural Highlights
 
-### Core Domain
+- **Event-driven mail processing** (decoupled from business logic)
+- **Best-effort idempotent reminder system** with database guarantees
+- **Retry & recovery strategy** (`@Retryable` + `@Recover`)
+- **Two distinct mail processing strategies**:
+- Per-booking (reminders)
+- Per-user aggregated (admin notifications)
+- **Transactional consistency with isolated operations (`REQUIRES_NEW`)**
+- **Integration testing with real SMTP (GreenMail)**
 
-* **Books, Authors, Genres, Users** (full CRUD)
-* **Booking system** instead of direct user–book relations
-* Explicit **rent / return workflow**
-* Support for:
+----------
 
-    * due dates
-    * overdue detection
-    * fines & fine payment
-
-### Booking & Business Logic
-
-* Rent only if book is available
-* Prevent renting if user has unpaid fines or overdue books
-* Calculate overdue days and fines dynamically
-* Keep booking history (active + returned)
-
-### Admin / Reporting
-
-* Booking reports with pagination:
-
-    * all bookings
-    * active bookings
-    * returned bookings
-    * overdue & due-soon bookings
-    * bookings with fines / unpaid fines
-    * "heavy users" (users with more than X active bookings)
-* Efficient queries using **JOIN FETCH + count queries**
-
-### Frontend
-
-* Pure **vanilla JavaScript (ES modules)**
-* Manual DOM updates & state handling
-* Filter panels and paginated tables
-* Visual status indicators (overdue, near-due, unpaid fines)
-* Custom modal dialogs for confirmations & errors
-
-### Performance & Data Access
-
-* DTO-based API design
-* No lazy-loading surprises in controllers
-* Explicit fetch strategies for each use case
-* Final **N+1 sanity pass completed** across the application
-
----
-
-## Tech Stack
-
-### Backend
-
-* Java 17
-* Spring Boot 3.x
-* Spring Web (REST API)
-* Spring Data JPA (Hibernate)
-* Flyway (DB migrations + repeatable seed scripts)
-* MySQL 8 (Docker)
-* Maven
-
-### Frontend
-
-* HTML5
-* CSS3
-* Vanilla JavaScript (ES6 modules)
-
-### Testing
-
-* JUnit 5
-* Mockito
-* Spring Boot Test
-* MockMvc
-* Integration tests for booking logic
-
----
-
-## Project Structure
+## Architecture Overview
 
 ```
-src/main/
-├─ java/org/mystudying/bookmanagementjpa/
-│  ├─ controller/      # REST controllers
-│  ├─ domain/          # JPA entities (Book, Author, Genre, User, Booking)
-│  ├─ dto/             # API DTOs (requests + responses)
-│  ├─ exception/       # Custom business exceptions + handlers
-│  ├─ repository/      # Spring Data JPA repositories
-│  └─ service/         # Transactional business logic
-└─ resources/
-   ├─ application.properties
-   ├─ db/migration/    # Flyway versioned & repeatable scripts
-   └─ static/          # Frontend (HTML, CSS, JS)
-
-pom.xml
-docker-compose.yml
+Controller → Service → Repository → Database  
+                ↓  
+          Domain Events  
+                ↓  
+       Async Event Listeners  
+                ↓  
+           Mail System
 ```
 
----
+### Design Principles
+
+- Thin controllers, rich service layer
+- Event-driven side effects (mail, notifications)
+- Asynchronous processing (`@Async`)
+- Retry & recovery for resilience
+- Clear transactional boundaries
+
+Detailed docs:
+
+- [Architecture](docs/architecture.md)
+- [Auth Flow](docs/authentication-flow.md)
+- [Reminder System](docs/reminder-system.md)
+
+---  
+
+## Core System Flows
+
+### Booking
+
+- Enforces business rules:
+- No duplicate active bookings
+- No borrowing with overdue books
+- No borrowing with unpaid fines
+- Ensures atomic inventory updates
+- Uses transactional boundaries for consistency
+
+---  
+
+### Reminder System
+
+Flow:
+
+```
+   Scheduler  
+       ↓  
+BookingReminderService  
+       ↓  
+Publish BookingReminderEvent  
+       ↓  
+Async Listener (@Retryable)  
+       ↓  
+ReminderProcessingService
+```
+
+Key characteristics:
+
+- Per-booking processing
+- Isolated transactions (`REQUIRES_NEW`)
+- Retry-enabled (`@Retryable`)
+- Log-based idempotency protection
+
+---  
+
+## Idempotency & Reliability
+
+The reminder system implements **best-effort idempotency**:
+
+- `SELECT ... FOR UPDATE` prevents concurrent re-processing *when log exists*
+- Unique constraint prevents duplicate log entries
+- Safe to retry due to transactional isolation
+
+### Known Trade-off!
+
+In rare cases, **duplicate emails may occur**:
+
+- Concurrent execution before log creation
+- Failure after email send but before log persistence
+
+This is an intentional design trade-off for a monolithic system.
+
+### Future Improvement
+
+- Reservation-based processing (`PENDING → SENT`)
+- Outbox pattern for guaranteed delivery
+
+---  
+
+## Mail System
+
+### Event-Driven Flow
+
+```
+Business Action  
+     ↓  
+Publish Event  
+     ↓  
+Async Listener (@Retryable)  
+     ↓  
+MailTemplateService  
+     ↓  
+MailService (SMTP)
+```
+
+### Features
+
+- Registration & verification emails
+- Password reset
+- Booking reminders
+- Admin bulk notifications
+
+---  
+
+### Mail Processing Strategies
+
+Two different strategies are used depending on use case:
+
+#### 1. Per-Booking (Reminders)
+
+- One email per booking
+- Focus: precision & timing
+- Used by scheduler
+
+#### 2. Per-User Aggregation (Admin Notifications)
+
+- One email per user with aggregated data
+- Includes:
+- Overdue books
+- Unpaid fines
+- Heavy users
+- Focus: readability & reduced email noise
+
+This separation ensures both **accuracy** and **usability**.
+  
+---  
+
+## Retry & Failure Handling
+
+- `@Retryable` for transient failures
+- `@Recover` for final fallback
+- Failed emails stored in `FailedMailLog`
+
+Acts as a lightweight **dead-letter system**
+  
+---  
+
+## Security
+
+- Spring Security (session-based)
+- URL + method-level authorization
+- Token-based flows:
+- Email verification
+- Password reset
+
+### Security Highlights
+
+- Atomic token consumption (race-condition safe)
+- Enumeration attack mitigation
+- CSRF protection (cookie + header)
+- Custom authentication handlers
+
+---  
+
+## Testing Strategy
+
+- Integration tests with **GreenMail (real SMTP simulation)**
+- Full flow testing:
+- DB → Event → Listener → Mail
+- Covers:
+- Retry behavior
+- Reminder processing
+- Aggregated notifications
+
+---  
+
+## Request Logging
+
+RequestLoggingFilter logs method, URI, status and duration for all non-static requests.
+
+Example log:
+
+GET /api/users → 200 (63 ms)
+
+### Future Improvement
+
+- Add metrics using Micrometer and expose counters (like mail.send, mail.failed)
+
+- Rebuild RequestLoggingFilter into @Component with FilterRegistrationBean to inject dependencies in filter (like
+  MeterRegistry)
+
+---  
 
 ## Running the Application
 
-### Option A — Docker (recommended)
+### Requirements
 
-1. Start MySQL:
+- Java 17+
 
-```bash
+- Maven
+
+- MySQL
+
+----------
+
+### Docker (recommended)
+
+1. Start MySQL using Docker:
+
+```bash  
 docker compose up -d
-```
+```  
 
 2. Run the application:
 
-```bash
+```bash  
 ./mvnw spring-boot:run
-```
+```  
 
 3. Open browser:
 
-```
-http://localhost:8080
-```
+```  
+http://localhost:8080  
+```  
 
-Flyway will automatically create the schema and insert demo data.
+Flyway will automatically:
+
+- create schema
+
+- run migrations
+
+- insert demo data
 
 To stop:
 
-```bash
+```bash  
 docker compose down
 ```
 
----
+----------
 
-### Option B — Local MySQL
+### Run Tests
 
-Set environment variables:
-
-```bash
-DB_URL=jdbc:mysql://localhost:3307/booksmarket
-DB_USER=user1
-DB_PASSWORD=user1
-```
-
-Then run:
-
-```bash
-./mvnw spring-boot:run
-```
-
----
-
-## REST API Overview
-
-### Books (`/api/books`)
-
-* `GET /api/books`
-* `GET /api/books/{id}`
-* `POST /api/books`
-* `PUT /api/books/{id}`
-* `DELETE /api/books/{id}`
-
-### Authors (`/api/authors`)
-
-* Standard CRUD endpoints
-
-### Genres (`/api/genres`)
-
-* List genres
-* Retrieve books by genre (optimized fetch)
-
-### Users (`/api/users`)
-
-* CRUD operations
-* Booking-related actions
-
-### Booking Actions
-
-* `POST /api/users/{id}/rent`
-* `POST /api/users/{id}/return`
-* `POST /api/users/{id}/bookings/{bookingId}/pay`
-
-### Reports (`/api/reports/bookings`)
-
-* Supports pagination and multiple report types via query params
-
----
-
-## Testing
-
-Run all tests:
-
-```bash
+```bash  
 ./mvnw test
 ```
 
-Tests expect a running MySQL instance (Docker recommended).
+----------
+
+## Profiles & Mail Configuration
+
+By default, the application runs in **dev mode**:
+
+```properties  
+spring.profiles.active=dev
+```
+
+In dev mode:
+
+- Mail sending can be disabled or use mock configuration
+
+- No real credentials are required
+
+----------
+
+### Enable Real Email Sending
+
+To enable real email sending:
+
+1. Switch to production profile:
+
+```properties
+spring.profiles.active=prod
+```
+
+2. Provide environment variables:
+
+- MAIL_USERNAME=your@gmail.com
+- MAIL_PASSWORD=your_app_password
+
+3. Gmail requires:
+
+- App password
+
+- 2FA enabled
+
+----------
+
+## Design Trade-offs
+
+- **Send-before-log in reminders**
+    - Ensures emails are not lost
+    - Accepts rare duplicate risk under concurrency
+
+- **Monolith instead of microservices**
+    - Simpler development and deployment
+    - Future-ready for event-driven extraction
+
+- **Database-based dead-letter handling**
+    - Simpler than message queues
+    - Sufficient for current scale
 
 ---
 
-## Project Status & Roadmap
+## Future Improvements
 
-**Current state:** Feature-complete, performance-stable, test-passing baseline.
+- Reservation-based idempotency (prevent duplicate sends)
 
-Planned future phases:
+- Outbox pattern (distributed reliability)
 
-* Authentication & Roles (Spring Security)
-* Swagger / OpenAPI documentation
-* Environment-based profiles
-* Email notifications
-* Further report refinements
-* Possible microservice split (Docker / Kubernetes)
+- Metrics & tracing
 
----
+- Rate limiting for sensitive endpoints
 
-## Author
+- Cleanup strategy for FailedMailLog
 
-**Volodymyr Zadorozhnyi**
+----------
 
-Junior Java Backend Developer
+## What This Project Demonstrates
 
-(Spring Boot • JPA • SQL • Docker)
+- Event-driven backend design
 
-This project represents a continuous learning journey and a realistic backend portfolio piece.
+- Trade-off-aware system design
+
+- Reliable async processing with retry & recovery
+
+- Concurrency-aware workflows
+
+- Real-world integration testing
